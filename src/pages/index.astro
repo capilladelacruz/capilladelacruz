@@ -1,11 +1,43 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>capilladelacruz</title>
+    <meta name="theme-color" content="#000000" />
+  </head>
+  <body>
+    <a href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">capilladelacruz</a>
+  </body>
+</html>
 
-<Layout>
-	<Welcome />
-</Layout>
+<style>
+  :global(html, body) {
+    margin: 0;
+    height: 100%;
+    background: #000;
+  }
+  :global(body) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    text-transform: lowercase;
+    animation: brillo 4s ease-in-out infinite;
+  }
+  @keyframes brillo {
+    0%, 100% { opacity: 0.15; text-shadow: none; }
+    50% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.3); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    a { animation: none; opacity: 0.8; }
+  }
+</style>
