@@ -8,7 +8,46 @@
     <meta name="theme-color" content="#000000" />
   </head>
   <body>
-    <a href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">capilladelacruz</a>
+    <video id="logo" src="/logo.mp4" muted playsinline preload="auto"></video>
+    <audio id="musica" src="/musica.mp3" loop preload="auto"></audio>
+    <button id="start">start</button>
+    <button id="sonido">sonido on</button>
+    <div id="flash"></div>
+    <section id="final">
+      <a href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">capilladelacruz</a>
+    </section>
+
+    <script>
+      const video = document.getElementById('logo') as HTMLVideoElement;
+      const musica = document.getElementById('musica') as HTMLAudioElement;
+      const start = document.getElementById('start')!;
+      const sonido = document.getElementById('sonido')!;
+      const flash = document.getElementById('flash')!;
+      const final = document.getElementById('final')!;
+
+      start.addEventListener('click', () => {
+        video.play();
+        musica.play();
+        start.classList.add('fuera');
+        video.classList.add('dentro');
+        sonido.classList.add('dentro');
+      });
+
+      sonido.addEventListener('click', () => {
+        musica.muted = !musica.muted;
+        sonido.textContent = musica.muted ? 'sonido off' : 'sonido on';
+      });
+
+      video.addEventListener('ended', () => {
+        flash.classList.add('on');
+        setTimeout(() => {
+          video.style.display = 'none';
+          final.classList.add('dentro');
+          sonido.classList.add('oscuro');
+          flash.classList.remove('on');
+        }, 1500);
+      });
+    </script>
   </body>
 </html>
 
@@ -17,27 +56,101 @@
     margin: 0;
     height: 100%;
     background: #000;
+    overflow: hidden;
   }
   :global(body) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  a {
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    text-transform: lowercase;
+  }
+
+  #logo {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    z-index: 1;
+  }
+  #logo.dentro { opacity: 1; }
+
+  #start {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    z-index: 2;
+    animation: brillo 4s ease-in-out infinite;
+    transition: opacity 0.6s ease;
+  }
+  #start.fuera { opacity: 0; pointer-events: none; animation: none; }
+
+  #sonido {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    color: #fff;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    z-index: 6;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease, color 0.6s ease;
+  }
+  #sonido.dentro { opacity: 0.5; pointer-events: auto; }
+  #sonido.dentro:hover { opacity: 1; }
+  #sonido.oscuro { color: #000; }
+
+  #flash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.5s ease-in;
+    z-index: 5;
+  }
+  #flash.on { opacity: 1; }
+
+  #final {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+  #final.dentro { opacity: 1; pointer-events: auto; }
+  #final a {
+    color: #000;
     text-decoration: none;
     font-size: 13px;
     letter-spacing: 0.35em;
-    text-transform: lowercase;
-    animation: brillo 4s ease-in-out infinite;
+    animation: respira 4s ease-in-out infinite;
   }
+
   @keyframes brillo {
-    0%, 100% { opacity: 0.15; text-shadow: none; }
+    0%, 100% { opacity: 0.2; text-shadow: none; }
     50% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.3); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    a { animation: none; opacity: 0.8; }
+  @keyframes respira {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
   }
 </style>
