@@ -9,7 +9,7 @@
   </head>
   <body>
     <video id="logo" src="/logo.mp4" muted playsinline preload="auto"></video>
-    <audio id="musica" src="/musica.mp3" loop preload="auto"></audio>
+    <audio id="musica" src="/musica.mp3" preload="auto"></audio>
     <button id="start">start</button>
     <button id="sonido">sonido on</button>
     <div id="flash"></div>
@@ -40,10 +40,22 @@
 
       video.addEventListener('ended', () => {
         flash.classList.add('on');
+        sonido.classList.remove('dentro');
+
+        const volumenInicial = musica.volume;
+        let paso = 0;
+        const fundido = setInterval(() => {
+          paso++;
+          musica.volume = Math.max(0, volumenInicial * (1 - paso / 15));
+          if (paso >= 15) {
+            clearInterval(fundido);
+            musica.pause();
+          }
+        }, 100);
+
         setTimeout(() => {
           video.style.display = 'none';
           final.classList.add('dentro');
-          sonido.classList.add('oscuro');
           flash.classList.remove('on');
         }, 1500);
       });
@@ -108,11 +120,10 @@
     z-index: 6;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.6s ease, color 0.6s ease;
+    transition: opacity 0.6s ease;
   }
   #sonido.dentro { opacity: 0.5; pointer-events: auto; }
   #sonido.dentro:hover { opacity: 1; }
-  #sonido.oscuro { color: #000; }
 
   #flash {
     position: fixed;
