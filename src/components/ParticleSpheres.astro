@@ -4,10 +4,11 @@
  * en la página blanca final.
  * - Se prepara en segundo plano mientras se ve el botón "start".
  * - Empieza a animarse con el evento `capilla:final` (lo lanza index.astro).
- * - Al pulsar una esfera: sus partículas llenan la pantalla → página del proyecto (blanca).
+ * - Al pulsar una esfera: sus partículas llenan la pantalla → archivo del proyecto
+ *   (cristal con contraseña → pila 3D de fotos → columna).
  */
 import { PROYECTOS } from '../data/proyectos';
-import Candado from './Candado.astro';
+import Archivo from './Archivo.astro';
 ---
 
 <div id="esferas" class="esferas">
@@ -21,32 +22,20 @@ import Candado from './Candado.astro';
     ))}
   </nav>
 
-  <section class="proyecto" data-proyecto hidden aria-live="polite">
-    <button type="button" class="proyecto__volver" data-volver>BACK</button>
-    <header class="proyecto__cabecera">
-      <h1 class="proyecto__titulo" data-proyecto-titulo></h1>
-    </header>
-    <!-- Aquí irá el archivo de fotos del proyecto. -->
-    <div class="proyecto__archivo" data-proyecto-archivo></div>
-  </section>
-
-  <Candado />
+  <Archivo />
 </div>
 
 <script>
   import { PROYECTOS } from '../data/proyectos';
   import type { EsferasScene } from '../scripts/esferas/EsferasScene';
-  import { Candado, hayQuePedir } from '../scripts/candado';
+  import { Archivo, type ModoCandado } from '../scripts/archivo/Archivo';
 
   const root = document.getElementById('esferas')!;
   const final = document.getElementById('final');
   const title = final?.querySelector<HTMLElement>(':scope > a') ?? document.createElement('span');
-  const panel = root.querySelector<HTMLElement>('[data-proyecto]')!;
-  const volver = root.querySelector<HTMLButtonElement>('[data-volver]')!;
-  const panelTitulo = root.querySelector<HTMLElement>('[data-proyecto-titulo]')!;
-
-  // "BACK" en el panel de contraseña = lo mismo que "BACK" en el proyecto.
-  const candado = new Candado(root.querySelector('[data-candado]')!, { onBack: () => salir() });
+  const archivoRoot = root.querySelector<HTMLElement>('[data-archivo]')!;
+  const volver = archivoRoot.querySelector<HTMLButtonElement>('[data-volver]')!;
+  const archivo = new Archivo(archivoRoot);
 
   let scene: EsferasScene | null = null;
   let preparing: Promise<EsferasScene | null> | null = null;
@@ -83,35 +72,32 @@ import Candado from './Candado.astro';
     const s = await prepare();
     s?.start();
     // Panel lil-gui: solo en desarrollo y solo en la página final.
-    if (s && import.meta.env.DEV) import('../scripts/esferas/gui').then((m) => m.initGui(s));
+    if (s && import.meta.env.DEV) {
+      Promise.all([import('../scripts/esferas/gui'), import('../scripts/archivo/gui')]).then(([m, a]) => {
+        const gui = m.initGui(s);
+        a.addArchivoFolders(gui, archivo, { abrirPrueba: (modo) => abrir(PROYECTOS[0].slug, { modo }) });
+        m.addConfigFolder(gui); // al final: copiar CONFIG / guardar como defecto
+      });
+    }
   }
 
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-  async function abrir(slug: string, { push = true } = {}) {
+  async function abrir(slug: string, { push = true, modo }: { push?: boolean; modo?: ModoCandado } = {}) {
     const proyecto = PROYECTOS.find((p) => p.slug === slug);
     if (!proyecto || !scene || scene.state !== 'idle') return;
 
+    // Three.js y las fotos se cargan mientras la esfera se expande.
+    archivo.precargar(proyecto);
     await scene.enter(slug);
     if (push) history.pushState({ proyecto: slug }, '', `/proyectos/${slug}`);
-
-    // Contraseña (solo la primera vez en la visita). Si se cancela, cerrar() ya se encarga.
-    if (hayQuePedir() && !(await candado.pedir())) return;
     if (scene.state !== 'inside') return;
-
-    panelTitulo.textContent = proyecto.title;
-    panel.hidden = false;
-    requestAnimationFrame(() => panel.classList.add('visible'));
-    volver.focus({ preventScroll: true });
+    // Cristal con contraseña (solo la primera vez en la visita) → pila → columna.
+    archivo.abrir(proyecto, modo);
   }
 
   async function cerrar() {
     if (!scene || scene.state !== 'inside') return;
-    const slug = history.state?.proyecto ?? null;
-    candado.cancelar();
-    panel.classList.remove('visible');
-    await wait(400);
-    panel.hidden = true;
+    const slug = archivo.actual?.slug ?? null;
+    await archivo.cerrar();
     await scene.exit();
     if (slug) root.querySelector<HTMLButtonElement>(`[data-buttons] [data-slug="${slug}"]`)?.focus({ preventScroll: true });
   }
@@ -122,8 +108,8 @@ import Candado from './Candado.astro';
     else cerrar();
   }
   volver.addEventListener('click', salir);
-  panel.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') volver.click();
+  archivoRoot.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') salir();
   });
   window.addEventListener('popstate', (e) => {
     if (!started) return;
@@ -194,54 +180,6 @@ import Candado from './Candado.astro';
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
-  }
-
-  /* Página del proyecto (fondo blanco) */
-  .proyecto {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    background: #fff;
-    color: #000;
-    overflow-y: auto;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-  .proyecto.visible {
-    opacity: 1;
-  }
-  .proyecto[hidden] {
-    display: none;
-  }
-  .proyecto__volver {
-    position: fixed;
-    top: 24px;
-    left: 24px;
-    background: none;
-    border: none;
-    padding: 0;
-    color: #000;
-    font: inherit;
-    font-size: 11px;
-    letter-spacing: 0.3em;
-    cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.3s ease;
-  }
-  .proyecto__volver:hover,
-  .proyecto__volver:focus-visible {
-    opacity: 1;
-  }
-  .proyecto__cabecera {
-    padding: 96px 24px 48px;
-    text-align: center;
-  }
-  .proyecto__titulo {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.35em;
-    text-transform: lowercase;
   }
 
   /* "capilladelacruz" se oculta mientras se entra en una esfera */

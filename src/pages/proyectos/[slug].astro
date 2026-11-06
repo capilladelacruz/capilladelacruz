@@ -1,19 +1,17 @@
 ---
 /**
  * Página directa de cada proyecto (/proyectos/<slug>): la que se ve al recargar
- * o al entrar con el enlace. Desde la home se llega con la transición de la esfera.
+ * o al entrar con el enlace. Misma experiencia que desde la home (cristal con
+ * contraseña → pila 3D → columna), sin la transición de la esfera.
  */
 import { PROYECTOS } from '../../data/proyectos';
-import { CONFIG } from '../../scripts/esferas/config';
-import { CLAVE_ACCESO } from '../../scripts/candado';
-import Candado from '../../components/Candado.astro';
+import Archivo from '../../components/Archivo.astro';
 
 export function getStaticPaths() {
   return PROYECTOS.map((proyecto) => ({ params: { slug: proyecto.slug }, props: { proyecto } }));
 }
 
 const { proyecto } = Astro.props;
-const conContrasena = CONFIG.password.enabled;
 ---
 
 <html lang="es">
@@ -22,80 +20,45 @@ const conContrasena = CONFIG.password.enabled;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{proyecto.title.toLowerCase()} · capilladelacruz</title>
     <meta name="theme-color" content="#ffffff" />
-    {conContrasena && (
-      // Antes de pintar: si aún no se ha puesto la contraseña en esta visita, se oculta el proyecto.
-      <script is:inline define:vars={{ clave: CLAVE_ACCESO }}>
-        try {
-          if (sessionStorage.getItem(clave) !== '1') document.documentElement.classList.add('bloqueado');
-        } catch (e) {
-          document.documentElement.classList.add('bloqueado');
-        }
-      </script>
-    )}
   </head>
-  <body>
-    <a class="volver" href="/">BACK</a>
-    <header>
-      <h1>{proyecto.title}</h1>
-    </header>
-    <!-- Aquí irá el archivo de fotos del proyecto. -->
-    <main></main>
-    {conContrasena && <Candado backHref="/" />}
+  <body data-slug={proyecto.slug}>
+    <Archivo backHref="/" title={proyecto.title} />
   </body>
 </html>
 
 <script>
-  import { Candado, hayQuePedir } from '../../scripts/candado';
+  import { PROYECTOS } from '../../data/proyectos';
+  import { Archivo } from '../../scripts/archivo/Archivo';
 
-  const el = document.querySelector<HTMLElement>('[data-candado]');
-  if (el && hayQuePedir()) {
-    new Candado(el).pedir().then((ok) => {
-      if (ok) document.documentElement.classList.remove('bloqueado');
-    });
-  } else {
-    document.documentElement.classList.remove('bloqueado');
+  const proyecto = PROYECTOS.find((p) => p.slug === document.body.dataset.slug);
+  const root = document.querySelector<HTMLElement>('[data-archivo]');
+  if (proyecto && root) {
+    const archivo = new Archivo(root);
+    archivo.abrir(proyecto);
+    if (import.meta.env.DEV) {
+      (window as any).__archivo = archivo; // depuración desde la consola
+      Promise.all([import('lil-gui'), import('../../scripts/archivo/gui'), import('../../scripts/esferas/gui')]).then(
+        ([{ default: GUI }, a, m]) => {
+          const gui = new GUI({ title: 'Archivo · dev' });
+          gui.domElement.style.zIndex = '50';
+          a.addArchivoFolders(gui, archivo);
+          m.addConfigFolder(gui); // al final: copiar CONFIG / guardar como defecto
+        },
+      );
+    }
   }
 </script>
 
 <style>
-  /* Proyecto oculto hasta poner la contraseña (aparece con un fundido). */
-  :global(.volver, header, main) {
-    transition: opacity 0.6s ease;
-  }
-  :global(html.bloqueado .volver, html.bloqueado header, html.bloqueado main) {
-    opacity: 0;
-    visibility: hidden;
-  }
   :global(html, body) {
     margin: 0;
-    min-height: 100%;
+    height: 100%;
     background: #fff;
     color: #000;
+    overflow: hidden;
   }
   :global(body) {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-  }
-  .volver {
-    position: fixed;
-    top: 24px;
-    left: 24px;
-    color: #000;
-    text-decoration: none;
-    font-size: 11px;
-    letter-spacing: 0.3em;
-    opacity: 0.5;
-  }
-  .volver:hover { opacity: 1; }
-  header {
-    padding: 96px 24px 48px;
-    text-align: center;
-  }
-  h1 {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.35em;
-    text-transform: lowercase;
   }
 </style>

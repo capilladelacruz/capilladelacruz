@@ -12,6 +12,13 @@ export type GravityShape = (typeof GRAVITY_SHAPES)[number];
 export const ENTRY_MODES = ['zoom', 'expansión', 'explosión', 'remolino', 'tinta'] as const;
 export type EntryMode = (typeof ENTRY_MODES)[number];
 
+/** Paso de la pila a la columna. */
+export const TRANSICIONES = ['vuelo', 'corte'] as const;
+export type Transicion = (typeof TRANSICIONES)[number];
+/** Orden de la cascada del vuelo. */
+export const ORDENES_VUELO = ['arriba-abajo', 'abajo-arriba', 'centro', 'aleatorio'] as const;
+export type OrdenVuelo = (typeof ORDENES_VUELO)[number];
+
 export const COMPOSITIONS = ['fila', 'flotando'] as const;
 export type Composition = (typeof COMPOSITIONS)[number];
 
@@ -63,7 +70,7 @@ export const CONFIG = {
   /** Gravedad central: la forma hacia la que se atraen las partículas del núcleo. */
   gravity: {
     /** Forma por esfera (slug → forma). Las que falten toman la de proyectos.ts. */
-    shapes: { 'materia-oscura': 'columna', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
+    shapes: { 'bandera': 'columna', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
     strength: 1.17, // fuerza de atracción (0 = sin forma · 1 = forma nítida · 2 = arrastra también el interior)
     coreRadius: 0.45, // tamaño del núcleo (anchura de los conos, radio del anillo, del punto…)
     twist: 1.83, // torsión del remolino alrededor del eje de la gravedad
@@ -142,6 +149,33 @@ export const CONFIG = {
   password: {
     enabled: true,
     value: 'QUESERADENOSOTROS',
+    // Cristal esmerilado sobre la pila de fotos
+    blur: 60, // desenfoque del cristal (px)
+    tint: 0.44, // 0…1: tinte claro del cristal
+    morphDuration: 1.05, // s: la barra se junta hasta ser un círculo
+    glow: 1.25, // 0…2: intensidad del brillo del círculo
+    revealDuration: 2.45, // s: el cristal se retira en degradado radial
+  },
+
+  /** Archivo de fotos de cada proyecto (pila 3D → columna). */
+  archivo: {
+    introDuration: 6.6, // s: entrada de la pila (ola + cámara alejándose)
+    wave: 0.5, // fuerza de la ola
+    angle: 0, // grados: giro de la pila sobre su eje vertical
+    stackGap: 0.255, // separación entre fotos de la pila (ancho de foto = 1)
+    columnWidth: 0.09, // ancho de la columna en escritorio (fracción del ancho)
+    columnWidthMobile: 0.3, // ancho de la columna en móvil
+    columnGap: 0, // px entre fotos de la columna
+    autoscroll: 7, // px/s (negativo = sube en lugar de bajar)
+    placeholderCount: 150, // fotos de relleno mientras la carpeta esté vacía
+    // Paso de la pila a la columna
+    transition: 'vuelo' as Transicion, // 'vuelo' = cada foto vuela a su hueco · 'corte' = cambio seco
+    flightDuration: 2.4, // s: duración total del vuelo (incluida la cascada)
+    flightStagger: 0.02, // s: retraso entre una foto y la siguiente
+    flightOrder: 'centro' as OrdenVuelo,
+    flightEase: 'power3.inOut',
+    flightCurve: 0.1, // 0 = línea recta · 1 = arco marcado
+    flightPause: 0.35, // s: pausa entre el final de la pila y el vuelo
   },
 
   /** Rendimiento. */

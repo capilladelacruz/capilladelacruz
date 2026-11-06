@@ -1,0 +1,246 @@
+---
+/**
+ * Archivo de fotos de un proyecto (lo usan la home y /proyectos/[slug]):
+ * cristal esmerilado con la contraseña → pila 3D → columna infinita.
+ * La lógica está en src/scripts/archivo/.
+ */
+interface Props {
+  /** Si se pasa, "BACK" es un enlace (página directa); si no, un botón (home). */
+  backHref?: string;
+  /** Título inicial (página directa). */
+  title?: string;
+}
+const { backHref, title = '' } = Astro.props;
+
+// Grano muy sutil del cristal (ruido SVG).
+const grano = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.9 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>',
+)}")`;
+---
+
+<section class="archivo" data-archivo hidden aria-live="polite">
+  <div class="archivo__pila" data-pila aria-hidden="true"></div>
+
+  <div class="archivo__columna" data-columna>
+    <div class="archivo__track" data-track></div>
+  </div>
+
+  <div class="cristal" data-cristal hidden>
+    <div class="cristal__vidrio" data-vidrio style={`--grano:${grano}`}></div>
+    <form class="cristal__barra" data-barra autocomplete="off" novalidate>
+      <input
+        class="cristal__input"
+        data-input
+        type="password"
+        name="password"
+        placeholder="password"
+        aria-label="password"
+        autocomplete="off"
+        autocapitalize="characters"
+        autocorrect="off"
+        spellcheck="false"
+        enterkeyhint="go"
+      />
+    </form>
+  </div>
+
+  <header class="archivo__cabecera">
+    {backHref ? (
+      <a class="archivo__back" href={backHref} data-volver>BACK</a>
+    ) : (
+      <button type="button" class="archivo__back" data-volver>BACK</button>
+    )}
+    <h1 class="archivo__titulo" data-titulo>{title}</h1>
+  </header>
+</section>
+
+<style>
+  .archivo {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    background: #fff;
+    color: #000;
+    overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .archivo[hidden] {
+    display: none;
+  }
+
+  .archivo__pila,
+  .archivo__pila :global(canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ── Columna */
+  .archivo__columna {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .archivo__columna.arrastrando {
+    cursor: grabbing;
+  }
+  .archivo__track {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: var(--col-w, 9vw);
+    transform: translate3d(-50%, 0, 0);
+    will-change: transform;
+  }
+  .archivo__track :global(.archivo__set) {
+    display: flow-root;
+  }
+  .archivo__track :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 var(--col-gap, 3px);
+    background: #f1f1f1;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  /* ── Cabecera: BACK y título discretos */
+  .archivo__cabecera {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .archivo__back {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    pointer-events: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    color: #000;
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-decoration: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.3s ease, color 0.4s ease;
+  }
+  .archivo__back:hover,
+  .archivo__back:focus-visible {
+    opacity: 1;
+  }
+  .archivo__titulo {
+    width: fit-content;
+    margin: 18px auto 0;
+    padding: 6px 12px;
+    background: #fff;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 14px;
+    letter-spacing: 0.35em;
+    text-transform: lowercase;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .archivo.con-columna .archivo__titulo {
+    opacity: 0.8;
+  }
+  /* Sobre el cristal: nada más que la barra y un BACK claro */
+  .archivo.con-cristal .archivo__back {
+    color: #fff;
+    opacity: 0.75;
+  }
+
+  /* ── Cristal esmerilado */
+  .cristal {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--vv-top, 0px);
+    height: var(--vv-h, 100%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cristal[hidden] {
+    display: none;
+  }
+  .cristal__vidrio {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.18);
+    -webkit-backdrop-filter: blur(22px) saturate(1.15);
+    backdrop-filter: blur(22px) saturate(1.15);
+  }
+  .cristal__vidrio::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--grano);
+    background-size: 160px 160px;
+    opacity: 0.07;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  /* Barra píldora (referencia "Search") */
+  .cristal__barra {
+    position: relative;
+    box-sizing: border-box;
+    width: min(440px, calc(100vw - 56px));
+    height: 54px;
+    margin: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background-color: rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(8px) brightness(1.06);
+    backdrop-filter: blur(8px) brightness(1.06);
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.18),
+      inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+      0 1px 0 rgba(255, 255, 255, 0.35);
+    overflow: hidden;
+  }
+  .cristal__input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 28px;
+    border: 0;
+    border-radius: 999px;
+    outline: none;
+    background: transparent;
+    color: #fff;
+    caret-color: #fff;
+    font: inherit;
+    font-size: 16px; /* 16px: iOS no hace zoom al enfocar */
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .cristal__input::placeholder {
+    color: #fff;
+    opacity: 0.92;
+    font-weight: 300;
+    letter-spacing: 0.22em;
+  }
+</style>

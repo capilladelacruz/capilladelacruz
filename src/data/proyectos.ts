@@ -42,8 +42,8 @@ export interface Proyecto {
 // esferas usan CONFIG.scene.row (mismo tamaño y mismo nº de partículas).
 export const PROYECTOS: Proyecto[] = [
   {
-    slug: 'materia-oscura',
-    title: 'Materia oscura',
+    slug: 'bandera',
+    title: 'Bandera',
     year: 2023,
     size: 0.9,
     seed: 7,

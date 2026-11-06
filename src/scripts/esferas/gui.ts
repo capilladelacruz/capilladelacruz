@@ -86,8 +86,79 @@ export function initGui(scene: EsferasScene) {
   floating.add(CONFIG.scene, 'drift', 0, 1, 0.01).name('deriva');
   floating.add(CONFIG.scene, 'driftSpeed', 0, 0.1, 0.001).name('velocidad deriva');
   floating.add(CONFIG.scene, 'titlePadding', 0, 120, 1).name('margen del título (px)');
-
-  // Copia TODO el CONFIG (incluidas gravedad, formas por esfera y entrada).
-  gui.add({ copiar: () => navigator.clipboard?.writeText(JSON.stringify(CONFIG, null, 2)) }, 'copiar').name('copiar CONFIG');
   return gui;
+}
+
+/**
+ * Carpeta final del panel (se añade la última, después de todas las demás):
+ * - copiar CONFIG: copia TODO el CONFIG (esferas, contraseña y archivo).
+ * - guardar como defecto: escribe los valores actuales en src/scripts/esferas/config.ts.
+ *   Solo existe con el servidor de desarrollo (lo atiende tools/guardar-config.mjs).
+ */
+export function addConfigFolder(gui: GUI) {
+  const f = gui.addFolder('CONFIG');
+  f.add(
+    {
+      copiar: async () => {
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(CONFIG, null, 2));
+          aviso('CONFIG copiado');
+        } catch {
+          aviso('No se pudo copiar', true);
+        }
+      },
+    },
+    'copiar',
+  ).name('copiar CONFIG');
+  if (import.meta.env.DEV) {
+    f.add(
+      {
+        guardar: async () => {
+          try {
+            const r = await fetch('/__dev/guardar-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(CONFIG),
+            });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok || !j.ok) throw new Error(j.error ?? r.statusText);
+            aviso('Guardado en config.ts');
+          } catch (err) {
+            console.error('[config] no se pudo guardar', err);
+            aviso('No se pudo guardar', true);
+          }
+        },
+      },
+      'guardar',
+    ).name('guardar como defecto');
+  }
+  return f;
+}
+
+/** Mensaje pequeño que desaparece solo. */
+function aviso(texto: string, error = false) {
+  const el = document.createElement('div');
+  el.textContent = texto;
+  Object.assign(el.style, {
+    position: 'fixed',
+    right: '16px',
+    bottom: '16px',
+    zIndex: '60',
+    padding: '7px 12px',
+    borderRadius: '6px',
+    background: error ? '#a3241b' : '#1f1f1f',
+    color: '#fff',
+    font: '11px/1.3 system-ui, sans-serif',
+    letterSpacing: '0.02em',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+    opacity: '0',
+    transition: 'opacity 0.25s ease',
+    pointerEvents: 'none',
+  });
+  document.body.appendChild(el);
+  requestAnimationFrame(() => (el.style.opacity = '1'));
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 1800);
 }
