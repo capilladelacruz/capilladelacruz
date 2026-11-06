@@ -3,7 +3,7 @@ import { CONFIG } from '../esferas/config';
 import { Columna } from './Columna';
 import { Cristal, hayQuePedir } from './Cristal';
 import { cargarFotos } from './fotos';
-import type { Pila } from './Pila';
+import type { ModoVuelo, Pila } from './Pila';
 import type { Proyecto } from '../../data/proyectos';
 
 export { hayQuePedir };
@@ -93,7 +93,7 @@ export class Archivo {
     if (this.pila && !this.reduced) {
       await this.pila.play();
       if (turno !== this.turno) return;
-      if (CONFIG.archivo.transition === 'vuelo') {
+      if (CONFIG.archivo.transition !== 'corte') {
         await this.vuelo(this.pila, turno);
         return;
       }
@@ -123,7 +123,7 @@ export class Archivo {
 
     await new Promise((r) => setTimeout(r, CONFIG.archivo.flightPause * 1000));
     if (turno !== this.turno) return;
-    await pila.volar(huecos, orden);
+    await pila.volar(huecos, orden, CONFIG.archivo.transition as ModoVuelo);
     if (turno !== this.turno) return;
     await listas;
     if (turno !== this.turno) return;

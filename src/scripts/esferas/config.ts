@@ -13,7 +13,7 @@ export const ENTRY_MODES = ['zoom', 'expansión', 'explosión', 'remolino', 'tin
 export type EntryMode = (typeof ENTRY_MODES)[number];
 
 /** Paso de la pila a la columna. */
-export const TRANSICIONES = ['vuelo', 'corte'] as const;
+export const TRANSICIONES = ['enderezar', 'vuelo', 'recoger', 'girar', 'corte'] as const;
 export type Transicion = (typeof TRANSICIONES)[number];
 /** Orden de la cascada del vuelo. */
 export const ORDENES_VUELO = ['arriba-abajo', 'abajo-arriba', 'centro', 'aleatorio'] as const;
@@ -70,7 +70,7 @@ export const CONFIG = {
   /** Gravedad central: la forma hacia la que se atraen las partículas del núcleo. */
   gravity: {
     /** Forma por esfera (slug → forma). Las que falten toman la de proyectos.ts. */
-    shapes: { 'bandera': 'columna', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
+    shapes: { bandera: 'columna', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
     strength: 1.17, // fuerza de atracción (0 = sin forma · 1 = forma nítida · 2 = arrastra también el interior)
     coreRadius: 0.45, // tamaño del núcleo (anchura de los conos, radio del anillo, del punto…)
     twist: 1.83, // torsión del remolino alrededor del eje de la gravedad
@@ -159,23 +159,27 @@ export const CONFIG = {
 
   /** Archivo de fotos de cada proyecto (pila 3D → columna). */
   archivo: {
-    introDuration: 6.6, // s: entrada de la pila (ola + cámara alejándose)
-    wave: 0.5, // fuerza de la ola
+    introDuration: 2.8, // s: entrada de la pila (ola + cámara alejándose)
+    wave: 0, // fuerza de la ola
     angle: 0, // grados: giro de la pila sobre su eje vertical
-    stackGap: 0.255, // separación entre fotos de la pila (ancho de foto = 1)
-    columnWidth: 0.09, // ancho de la columna en escritorio (fracción del ancho)
-    columnWidthMobile: 0.3, // ancho de la columna en móvil
+    stackGap: 0.3, // separación entre fotos de la pila (ancho de foto = 1)
+    columnWidth: 0.165, // ancho de la columna en escritorio (fracción del ancho)
+    columnWidthMobile: 0.4, // ancho de la columna en móvil
     columnGap: 0, // px entre fotos de la columna
-    autoscroll: 7, // px/s (negativo = sube en lugar de bajar)
+    autoscroll: 88, // px/s (negativo = sube en lugar de bajar)
     placeholderCount: 150, // fotos de relleno mientras la carpeta esté vacía
     // Paso de la pila a la columna
-    transition: 'vuelo' as Transicion, // 'vuelo' = cada foto vuela a su hueco · 'corte' = cambio seco
-    flightDuration: 2.4, // s: duración total del vuelo (incluida la cascada)
-    flightStagger: 0.02, // s: retraso entre una foto y la siguiente
-    flightOrder: 'centro' as OrdenVuelo,
+    // enderezar = la diagonal gira hasta ponerse vertical · vuelo = cada foto vuela a su hueco
+    // recoger = se juntan en el centro y se despliegan · girar = de frente en su sitio y luego a la columna
+    // corte = cambio seco
+    transition: 'enderezar' as Transicion,
+    flightDuration: 3.55, // s: duración total del vuelo (incluida la cascada)
+    flightStagger: 0, // s: retraso entre una foto y la siguiente
+    flightOrder: 'aleatorio' as OrdenVuelo,
     flightEase: 'power3.inOut',
-    flightCurve: 0.1, // 0 = línea recta · 1 = arco marcado
-    flightPause: 0.35, // s: pausa entre el final de la pila y el vuelo
+    flightCurve: 0.71, // solo «vuelo»: 0 = línea recta · 1 = arco marcado
+    flightSplit: 0.13, // solo «recoger» y «girar»: parte del tiempo de la 1.ª fase (0,1–0,9)
+    flightPause: 1.4, // s: pausa entre el final de la pila y el vuelo
   },
 
   /** Rendimiento. */

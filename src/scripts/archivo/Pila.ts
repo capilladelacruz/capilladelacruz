@@ -11,13 +11,8 @@ const ISO_DIR = new THREE.Vector3(1, 1, 1).normalize();
 
 const easeZoom = gsap.parseEase('power2.inOut');
 const tmp = new THREE.Vector3();
-const vRight = new THREE.Vector3();
-const vUp = new THREE.Vector3();
-const vFwd = new THREE.Vector3();
 const vEnd = new THREE.Vector3();
-const vCtrl = new THREE.Vector3();
-const vDir = new THREE.Vector3();
-const vPerp = new THREE.Vector3();
+const vPos = new THREE.Vector3();
 const vScale = new THREE.Vector3();
 
 /** Recorte "cover" de la textura en la ficha (repeat/offset). */
@@ -29,7 +24,7 @@ interface Crop {
 }
 const SIN_RECORTE: Crop = { rx: 1, ry: 1, ox: 0, oy: 0 };
 
-/** Destino de una foto en la columna, en px del viewport (null o fuera de pantalla = no vuela). */
+/** Destino de una foto en la columna, en px del viewport (null = no vuela: encoge en la pila). */
 export interface Hueco {
   left: number;
   top: number;
@@ -37,13 +32,18 @@ export interface Hueco {
   height: number;
 }
 
+/** Efectos de reorganización de la pila en la columna. */
+export type ModoVuelo = 'enderezar' | 'vuelo' | 'recoger' | 'girar';
+
 interface FichaEnVuelo {
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   hueco: Hueco | null;
+  /** Posición en la cascada (0 = la primera en salir). */
+  rank: number;
   start: number;
   dur: number;
-  empezada: boolean;
-  p0: THREE.Vector3;
+  /** Pose inicial: posición en espacio de cámara, rotación y escala en el mundo. */
+  c0: THREE.Vector3;
   q0: THREE.Quaternion;
   s0: THREE.Vector3;
 }
@@ -52,8 +52,13 @@ interface Vuelo {
   t0: number;
   total: number;
   fichas: FichaEnVuelo[];
+  modo: ModoVuelo;
   ease: (t: number) => number;
   curve: number;
+  split: number;
+  /** Centro de la pila en espacio de cámara (x, y). */
+  cx: number;
+  cy: number;
   resolve: () => void;
 }
 
@@ -269,39 +274,50 @@ export class Pila {
     this.renderer.render(this.scene, this.camera);
   }
 
-  // ───────────── Vuelo de la pila a la columna ─────────────
+  // ───────────── Reorganización de la pila en la columna ─────────────
 
   /**
-   * Cada foto vuela desde su sitio en la pila hasta su hueco en la columna (px del viewport),
-   * girando hasta quedar plana y de frente. `orden` = posición de cada foto en la cascada.
-   * Las que no tienen hueco visible no vuelan: encogen en su sitio a lo largo del vuelo.
+   * Lleva cada foto desde su sitio en la pila hasta su hueco en la columna (px del viewport),
+   * girando hasta quedar plana y de frente, con el efecto `modo`:
+   *  - enderezar: la diagonal gira como un solo bloque hasta ponerse vertical y se abre.
+   *  - vuelo:     cada foto vuela por su cuenta a su hueco (con arco opcional).
+   *  - recoger:   todas se juntan en un montón en el centro y luego se despliegan arriba y abajo.
+   *  - girar:     primero se ponen de frente en su sitio y después se deslizan a la columna.
+   * `orden` = orden de salida de la cascada.
    */
-  volar(huecos: (Hueco | null)[], orden: number[]): Promise<void> {
+  volar(huecos: (Hueco | null)[], orden: number[], modo: ModoVuelo): Promise<void> {
     this.terminarVuelo();
-    const { flightDuration: T, flightStagger, flightEase, flightCurve } = CONFIG.archivo;
-    const visibles = orden.filter((i) => huecos[i]);
-    const n = visibles.length;
-    // La cascada cabe siempre en la duración total.
+    const { flightDuration: T, flightStagger, flightEase, flightCurve, flightSplit } = CONFIG.archivo;
+    const n = orden.length;
     const minDur = Math.min(0.4, T);
+    // La cascada cabe siempre en la duración total.
     const stagger = n > 1 ? Math.min(flightStagger, (T - minDur) / (n - 1)) : 0;
     const dur = Math.max(minDur, T - stagger * Math.max(0, n - 1));
-    const N = orden.length;
+
+    this.camera.updateMatrixWorld();
+    const inv = this.camera.matrixWorldInverse;
     const fichas: FichaEnVuelo[] = [];
-    let kVis = 0;
+    let cx = 0;
+    let cy = 0;
     orden.forEach((i, rank) => {
       const mesh = this.cards[i];
       if (!mesh) return;
-      const hueco = huecos[i] ?? null;
-      const start = hueco ? stagger * kVis++ : (rank / Math.max(1, N - 1)) * Math.max(0, T - 0.35);
+      // Se fija la pose actual de todas las fotos y se sacan de la pila.
+      mesh.updateMatrixWorld();
+      this.scene.attach(mesh);
+      mesh.userData.vuela = true;
+      const c0 = mesh.position.clone().applyMatrix4(inv);
+      cx += c0.x;
+      cy += c0.y;
       fichas.push({
         mesh,
-        hueco,
-        start,
-        dur: hueco ? dur : Math.min(0.35, T),
-        empezada: false,
-        p0: new THREE.Vector3(),
-        q0: new THREE.Quaternion(),
-        s0: new THREE.Vector3(1, 1, 1),
+        hueco: huecos[i] ?? null,
+        rank,
+        start: stagger * rank,
+        dur,
+        c0,
+        q0: mesh.quaternion.clone(),
+        s0: mesh.scale.clone(),
       });
     });
     this.canvas.style.visibility = 'visible';
@@ -311,8 +327,12 @@ export class Pila {
         t0: performance.now(),
         total: T,
         fichas,
+        modo,
         ease: gsap.parseEase(flightEase) ?? ((t: number) => t),
         curve: flightCurve,
+        split: THREE.MathUtils.clamp(flightSplit, 0.1, 0.9),
+        cx: fichas.length ? cx / fichas.length : 0,
+        cy: fichas.length ? cy / fichas.length : 0,
         resolve,
       };
     });
@@ -324,82 +344,111 @@ export class Pila {
     v?.resolve();
   }
 
-  /** Px del viewport → punto del mundo en un plano frente a la cámara. */
-  private pxAMundo(x: number, y: number, out: THREE.Vector3) {
-    const r = this.canvas.getBoundingClientRect();
-    const nx = ((x - r.left) / r.width) * 2 - 1;
-    const ny = 1 - ((y - r.top) / r.height) * 2;
-    const m = this.camera.matrixWorld;
-    vRight.setFromMatrixColumn(m, 0);
-    vUp.setFromMatrixColumn(m, 1);
-    vFwd.setFromMatrixColumn(m, 2).negate();
-    // 60 unidades delante de la cámara: por delante de toda la pila.
-    return out
-      .copy(this.camera.position)
-      .addScaledVector(vFwd, 60)
-      .addScaledVector(vRight, (nx * this.camera.right) / this.camera.zoom)
-      .addScaledVector(vUp, (ny * this.camera.top) / this.camera.zoom);
-  }
-
   private pasoVuelo() {
     const v = this.vuelo!;
     const t = (performance.now() - v.t0) / 1000;
     const r = this.canvas.getBoundingClientRect();
-    const mundoPorPx = (2 * this.camera.top) / this.camera.zoom / r.height;
+    const zoom = this.camera.zoom;
+    const halfW = this.camera.right / zoom; // medio ancho visible (unidades de cámara)
+    const halfH = this.camera.top / zoom;
+    const mundoPorPx = (2 * halfH) / r.height;
+    const Z_FINAL = -60; // plano de la columna: por delante de toda la pila
+    const N = v.fichas.length;
 
     for (const f of v.fichas) {
-      if (t < f.start) continue;
       const card = f.mesh;
-      const k = Math.min(1, (t - f.start) / f.dur);
+      const k = THREE.MathUtils.clamp((t - f.start) / f.dur, 0, 1);
 
       if (!f.hueco) {
-        // Sin hueco visible: encoge en su sitio de la pila y desaparece.
-        card.scale.setScalar(1 - k);
-        if (k >= 1) card.visible = false;
+        // Sin hueco: encoge en su sitio y desaparece.
+        card.scale.copy(f.s0).multiplyScalar(1 - v.ease(k));
+        card.visible = k < 1;
         continue;
       }
 
-      if (!f.empezada) {
-        f.empezada = true;
-        card.updateMatrixWorld();
-        this.scene.attach(card); // conserva su pose en el mundo
-        card.userData.vuela = true;
-        f.p0.copy(card.position);
-        f.q0.copy(card.quaternion);
-        f.s0.copy(card.scale);
-      }
-      const e = v.ease(k);
+      // Destino en espacio de cámara (la cámara mira hacia -Z).
       const h = f.hueco;
-      this.pxAMundo(h.left + h.width / 2, h.top + h.height / 2, vEnd);
+      const ex = (((h.left + h.width / 2 - r.left) / r.width) * 2 - 1) * halfW;
+      const ey = (1 - ((h.top + h.height / 2 - r.top) / r.height) * 2) * halfH;
+      vEnd.set(ex, ey, Z_FINAL);
+      const c0 = f.c0;
+      let giro: number; // 0 = pose de la pila · 1 = plana, de frente y a tamaño final
 
-      // Recorrido: curva de Bézier con el punto de control desplazado en perpendicular.
-      vDir.subVectors(vEnd, f.p0);
-      const dist = vDir.length();
-      vCtrl.addVectors(f.p0, vEnd).multiplyScalar(0.5);
-      if (dist > 1e-6 && v.curve > 0) {
-        vFwd.setFromMatrixColumn(this.camera.matrixWorld, 2);
-        vPerp.crossVectors(vDir, vFwd).normalize();
-        vUp.setFromMatrixColumn(this.camera.matrixWorld, 1);
-        if (vPerp.dot(vUp) < 0) vPerp.negate();
-        vCtrl.addScaledVector(vPerp, v.curve * dist * 0.5);
+      switch (v.modo) {
+        case 'enderezar': {
+          // Coordenadas polares respecto al centro de la pila → respecto al centro de la pantalla:
+          // el ángulo de la diagonal gira hasta la vertical y las distancias pasan a las de la columna.
+          const e = v.ease(k);
+          const ax = c0.x - v.cx;
+          const ay = c0.y - v.cy;
+          const angA = Math.atan2(ay, ax);
+          let dAng = Math.atan2(ey, ex) - angA;
+          dAng = Math.atan2(Math.sin(dAng), Math.cos(dAng)); // giro más corto
+          const ang = angA + dAng * e;
+          const rad = THREE.MathUtils.lerp(Math.hypot(ax, ay), Math.hypot(ex, ey), e);
+          vPos.set(
+            THREE.MathUtils.lerp(v.cx, 0, e) + Math.cos(ang) * rad,
+            THREE.MathUtils.lerp(v.cy, 0, e) + Math.sin(ang) * rad,
+            THREE.MathUtils.lerp(c0.z, Z_FINAL, e),
+          );
+          giro = e;
+          break;
+        }
+        case 'recoger': {
+          // 1) se juntan en un montón en el centro · 2) se despliegan a sus huecos.
+          const k1 = v.ease(Math.min(1, k / v.split));
+          const k2 = v.ease(Math.max(0, (k - v.split) / (1 - v.split)));
+          const pz = Z_FINAL + (N - f.rank) * 0.01; // la primera en salir queda encima
+          vPos.set(THREE.MathUtils.lerp(c0.x, 0, k1), THREE.MathUtils.lerp(c0.y, 0, k1), THREE.MathUtils.lerp(c0.z, pz, k1));
+          vPos.lerp(vEnd, k2);
+          giro = k1;
+          break;
+        }
+        case 'girar': {
+          // 1) se ponen de frente en su sitio · 2) se deslizan hasta la columna.
+          const k1 = v.ease(Math.min(1, k / v.split));
+          const k2 = v.ease(Math.max(0, (k - v.split) / (1 - v.split)));
+          vPos.set(c0.x, c0.y, THREE.MathUtils.lerp(c0.z, Z_FINAL + (N - f.rank) * 0.01, k1));
+          vPos.lerp(vEnd, k2);
+          giro = k1;
+          break;
+        }
+        default: {
+          // 'vuelo': curva de Bézier con el punto de control desplazado en perpendicular.
+          const e = v.ease(k);
+          const dx = ex - c0.x;
+          const dy = ey - c0.y;
+          const dist = Math.hypot(dx, dy);
+          let px = 0;
+          let py = 0;
+          if (dist > 1e-6 && v.curve > 0) {
+            px = -dy / dist;
+            py = dx / dist;
+            if (py < 0) (px = -px), (py = -py); // el arco siempre hacia arriba
+          }
+          const mx = (c0.x + ex) / 2 + px * v.curve * dist * 0.5;
+          const my = (c0.y + ey) / 2 + py * v.curve * dist * 0.5;
+          const u = 1 - e;
+          vPos.set(
+            u * u * c0.x + 2 * u * e * mx + e * e * ex,
+            u * u * c0.y + 2 * u * e * my + e * e * ey,
+            THREE.MathUtils.lerp(c0.z, Z_FINAL, e),
+          );
+          giro = e;
+        }
       }
-      const u = 1 - e;
-      card.position
-        .copy(f.p0)
-        .multiplyScalar(u * u)
-        .addScaledVector(vCtrl, 2 * u * e)
-        .addScaledVector(vEnd, e * e);
 
-      // Gira hasta quedar de frente y toma el tamaño exacto del hueco.
-      card.quaternion.slerpQuaternions(f.q0, this.camera.quaternion, e);
+      card.position.copy(vPos).applyMatrix4(this.camera.matrixWorld);
+      card.quaternion.slerpQuaternions(f.q0, this.camera.quaternion, giro);
       vScale.set((h.width * mundoPorPx) / CARD_W, (h.height * mundoPorPx) / CARD_H, 1);
-      card.scale.lerpVectors(f.s0, vScale, e);
+      card.scale.lerpVectors(f.s0, vScale, giro);
 
       // La textura pasa de recortada (ficha) a completa (como en la columna).
       const crop: Crop = card.userData.crop ?? SIN_RECORTE;
       const map = card.material.map;
       if (map) {
-        map.repeat.set(crop.rx + (1 - crop.rx) * e, crop.ry + (1 - crop.ry) * e);
+        const u = 1 - giro;
+        map.repeat.set(crop.rx + (1 - crop.rx) * giro, crop.ry + (1 - crop.ry) * giro);
         map.offset.set(crop.ox * u, crop.oy * u);
       }
     }

@@ -11,8 +11,8 @@ const normaliza = (s: string) => s.replace(/\s+/g, '').toUpperCase();
 
 /**
  * En la web publicada el acceso se recuerda durante la visita (sessionStorage: sobrevive a
- * recargas en la misma pestaña). En local (npm run dev) solo dura hasta recargar,
- * para poder probar el cristal sin tener que abrir pestañas nuevas.
+ * recargas en la misma pestaña). En local (npm run dev) NO se recuerda: la pide cada vez
+ * que se entra en un proyecto, para poder probar el cristal siempre.
  */
 const RECORDAR_EN_PESTANA = !import.meta.env.DEV;
 let accesoEnMemoria = false;
@@ -29,8 +29,8 @@ export function hayQuePedir() {
 }
 
 function recordarAcceso() {
-  accesoEnMemoria = true;
   if (!RECORDAR_EN_PESTANA) return;
+  accesoEnMemoria = true;
   try {
     sessionStorage.setItem(CLAVE_ACCESO, '1');
   } catch {}

@@ -40,7 +40,15 @@ export function addArchivoFolders(gui: GUI, archivo: Archivo, { abrirPrueba }: A
   arch.add(CONFIG.archivo, 'columnWidthMobile', 0.1, 0.9, 0.01).name('ancho columna (móvil)');
   arch.add(CONFIG.archivo, 'columnGap', 0, 30, 1).name('separación columna (px)');
   arch.add(CONFIG.archivo, 'autoscroll', -200, 200, 1).name('autoscroll (px/s)');
-  arch.add(CONFIG.archivo, 'transition', [...TRANSICIONES]).name('modo de transición');
+  arch
+    .add(CONFIG.archivo, 'transition', {
+      'enderezar (la diagonal gira a vertical)': TRANSICIONES[0],
+      'vuelo (cada foto a su hueco)': TRANSICIONES[1],
+      'recoger y desplegar': TRANSICIONES[2],
+      'girar y deslizar': TRANSICIONES[3],
+      'corte seco': TRANSICIONES[4],
+    })
+    .name('modo de transición');
   arch.add(CONFIG.archivo, 'flightDuration', 0.4, 8, 0.05).name('duración del vuelo (s)');
   arch.add(CONFIG.archivo, 'flightStagger', 0, 0.4, 0.005).name('retraso entre fotos (s)');
   arch
@@ -54,7 +62,8 @@ export function addArchivoFolders(gui: GUI, archivo: Archivo, { abrirPrueba }: A
   arch
     .add(CONFIG.archivo, 'flightEase', ['power2.inOut', 'power3.inOut', 'power4.inOut', 'expo.inOut', 'sine.inOut', 'circ.inOut', 'power3.out', 'expo.out', 'back.out(1.4)', 'none'])
     .name('easing del vuelo');
-  arch.add(CONFIG.archivo, 'flightCurve', 0, 1.5, 0.01).name('curva del recorrido');
+  arch.add(CONFIG.archivo, 'flightCurve', 0, 1.5, 0.01).name('curva del recorrido (vuelo)');
+  arch.add(CONFIG.archivo, 'flightSplit', 0.1, 0.9, 0.01).name('reparto fases (recoger/girar)');
   arch.add(CONFIG.archivo, 'flightPause', 0, 3, 0.05).name('pausa pila → vuelo (s)');
   arch
     .add(

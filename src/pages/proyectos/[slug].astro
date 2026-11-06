@@ -29,6 +29,7 @@ const { proyecto } = Astro.props;
 <script>
   import { PROYECTOS } from '../../data/proyectos';
   import { Archivo } from '../../scripts/archivo/Archivo';
+  import { CONFIG } from '../../scripts/esferas/config';
 
   const proyecto = PROYECTOS.find((p) => p.slug === document.body.dataset.slug);
   const root = document.querySelector<HTMLElement>('[data-archivo]');
@@ -36,7 +37,7 @@ const { proyecto } = Astro.props;
     const archivo = new Archivo(root);
     archivo.abrir(proyecto);
     if (import.meta.env.DEV) {
-      (window as any).__archivo = archivo; // depuración desde la consola
+      Object.assign(window as any, { __archivo: archivo, __config: CONFIG }); // depuración desde la consola
       Promise.all([import('lil-gui'), import('../../scripts/archivo/gui'), import('../../scripts/esferas/gui')]).then(
         ([{ default: GUI }, a, m]) => {
           const gui = new GUI({ title: 'Archivo · dev' });
