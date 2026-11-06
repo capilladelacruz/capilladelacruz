@@ -1,0 +1,243 @@
+---
+/**
+ * Esferas de partículas (una por proyecto) alrededor de "capilladelacruz",
+ * en la página blanca final.
+ * - Se prepara en segundo plano mientras se ve el botón "start".
+ * - Empieza a animarse con el evento `capilla:final` (lo lanza index.astro).
+ * - Al pulsar una esfera: sus partículas llenan la pantalla → página del proyecto (blanca).
+ */
+import { PROYECTOS } from '../data/proyectos';
+---
+
+<div id="esferas" class="esferas">
+  <div class="esferas__canvas" data-canvas></div>
+  <div class="esferas__veil" data-veil aria-hidden="true"></div>
+
+
+  <nav class="esferas__a11y" data-buttons aria-label="Proyectos">
+    {PROYECTOS.map((p) => (
+      <button type="button" data-slug={p.slug} aria-label={p.title}>{p.title}</button>
+    ))}
+  </nav>
+
+  <section class="proyecto" data-proyecto hidden aria-live="polite">
+    <button type="button" class="proyecto__volver" data-volver>BACK</button>
+    <header class="proyecto__cabecera">
+      <h1 class="proyecto__titulo" data-proyecto-titulo></h1>
+    </header>
+    <!-- Aquí irá el archivo de fotos del proyecto. -->
+    <div class="proyecto__archivo" data-proyecto-archivo></div>
+  </section>
+</div>
+
+<script>
+  import { PROYECTOS } from '../data/proyectos';
+  import type { EsferasScene } from '../scripts/esferas/EsferasScene';
+
+  const root = document.getElementById('esferas')!;
+  const final = document.getElementById('final');
+  const title = final?.querySelector<HTMLElement>(':scope > a') ?? document.createElement('span');
+  const panel = root.querySelector<HTMLElement>('[data-proyecto]')!;
+  const volver = root.querySelector<HTMLButtonElement>('[data-volver]')!;
+  const panelTitulo = root.querySelector<HTMLElement>('[data-proyecto-titulo]')!;
+
+  let scene: EsferasScene | null = null;
+  let preparing: Promise<EsferasScene | null> | null = null;
+  let started = false;
+
+  /** Carga Three.js y crea la escena (sin renderizar todavía). */
+  function prepare() {
+    preparing ??= import('../scripts/esferas/EsferasScene')
+      .then(({ EsferasScene, CONFIG }) => {
+        scene = new EsferasScene({
+          root,
+          canvasHost: root.querySelector('[data-canvas]')!,
+          buttons: root.querySelector('[data-buttons]')!,
+          veil: root.querySelector('[data-veil]')!,
+          title,
+          proyectos: PROYECTOS,
+          onSelect: (p) => abrir(p.slug),
+        });
+        if (import.meta.env.DEV) (window as any).__esferas = { scene, CONFIG }; // depuración desde la consola
+        return scene;
+      })
+      .catch((err) => {
+        console.error('[esferas] WebGL no disponible', err);
+        root.classList.add('sin-webgl');
+        return null;
+      });
+    return preparing;
+  }
+
+  async function start() {
+    if (started) return;
+    started = true;
+    root.classList.add('activo');
+    const s = await prepare();
+    s?.start();
+    // Panel lil-gui: solo en desarrollo y solo en la página final.
+    if (s && import.meta.env.DEV) import('../scripts/esferas/gui').then((m) => m.initGui(s));
+  }
+
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  async function abrir(slug: string, { push = true } = {}) {
+    const proyecto = PROYECTOS.find((p) => p.slug === slug);
+    if (!proyecto || !scene || scene.state !== 'idle') return;
+
+    await scene.enter(slug);
+
+    panelTitulo.textContent = proyecto.title;
+    panel.hidden = false;
+    requestAnimationFrame(() => panel.classList.add('visible'));
+    if (push) history.pushState({ proyecto: slug }, '', `/proyectos/${slug}`);
+    volver.focus({ preventScroll: true });
+  }
+
+  async function cerrar() {
+    if (!scene || scene.state !== 'inside') return;
+    const slug = history.state?.proyecto ?? null;
+    panel.classList.remove('visible');
+    await wait(400);
+    panel.hidden = true;
+    await scene.exit();
+    if (slug) root.querySelector<HTMLButtonElement>(`[data-buttons] [data-slug="${slug}"]`)?.focus({ preventScroll: true });
+  }
+
+  // "volver": si entramos con pushState, retrocede en el historial (popstate cierra).
+  volver.addEventListener('click', () => {
+    if (history.state?.proyecto) history.back();
+    else cerrar();
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') volver.click();
+  });
+  window.addEventListener('popstate', (e) => {
+    if (!started) return;
+    const slug = e.state?.proyecto;
+    if (slug) abrir(slug, { push: false });
+    else cerrar();
+  });
+
+  // Atajo solo en local: /?skip salta la intro y va directo a las esferas.
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('skip')) {
+    document.getElementById('start')?.classList.add('fuera');
+    const video = document.getElementById('logo');
+    if (video) video.style.display = 'none';
+    final?.classList.add('dentro');
+  }
+
+  // Prepara la escena en un momento tranquilo (pantalla del botón "start").
+  const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 300));
+  idle(() => prepare());
+
+  if (final?.classList.contains('dentro')) start();
+  else window.addEventListener('capilla:final', () => start(), { once: true });
+</script>
+
+<style>
+  .esferas {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .esferas.activo {
+    opacity: 1;
+  }
+
+  .esferas__canvas,
+  .esferas__canvas :global(canvas) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .esferas__canvas {
+    z-index: 0;
+  }
+
+  /* Velo que oscurece la pantalla en el punto máximo de la entrada */
+  .esferas__veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Botones invisibles para teclado y lectores de pantalla */
+  .esferas__a11y button {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Página del proyecto (fondo blanco) */
+  .proyecto {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: #fff;
+    color: #000;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .proyecto.visible {
+    opacity: 1;
+  }
+  .proyecto[hidden] {
+    display: none;
+  }
+  .proyecto__volver {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: #000;
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .proyecto__volver:hover,
+  .proyecto__volver:focus-visible {
+    opacity: 1;
+  }
+  .proyecto__cabecera {
+    padding: 96px 24px 48px;
+    text-align: center;
+  }
+  .proyecto__titulo {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.35em;
+    text-transform: lowercase;
+  }
+
+  /* "capilladelacruz" se oculta mientras se entra en una esfera */
+  :global(#final > a) {
+    transition: color 0.5s ease;
+  }
+  :global(#final:has(.esferas.is-transitioning) > a) {
+    color: transparent !important;
+    pointer-events: none;
+  }
+
+</style>

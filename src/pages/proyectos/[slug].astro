@@ -1,0 +1,65 @@
+---
+/**
+ * Página directa de cada proyecto (/proyectos/<slug>): la que se ve al recargar
+ * o al entrar con el enlace. Desde la home se llega con la transición de la esfera.
+ */
+import { PROYECTOS } from '../../data/proyectos';
+
+export function getStaticPaths() {
+  return PROYECTOS.map((proyecto) => ({ params: { slug: proyecto.slug }, props: { proyecto } }));
+}
+
+const { proyecto } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{proyecto.title.toLowerCase()} · capilladelacruz</title>
+    <meta name="theme-color" content="#ffffff" />
+  </head>
+  <body>
+    <a class="volver" href="/">BACK</a>
+    <header>
+      <h1>{proyecto.title}</h1>
+    </header>
+    <!-- Aquí irá el archivo de fotos del proyecto. -->
+    <main></main>
+  </body>
+</html>
+
+<style>
+  :global(html, body) {
+    margin: 0;
+    min-height: 100%;
+    background: #fff;
+    color: #000;
+  }
+  :global(body) {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .volver {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    color: #000;
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    opacity: 0.5;
+  }
+  .volver:hover { opacity: 1; }
+  header {
+    padding: 96px 24px 48px;
+    text-align: center;
+  }
+  h1 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.35em;
+    text-transform: lowercase;
+  }
+</style>
