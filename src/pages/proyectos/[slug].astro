@@ -4,12 +4,16 @@
  * o al entrar con el enlace. Desde la home se llega con la transición de la esfera.
  */
 import { PROYECTOS } from '../../data/proyectos';
+import { CONFIG } from '../../scripts/esferas/config';
+import { CLAVE_ACCESO } from '../../scripts/candado';
+import Candado from '../../components/Candado.astro';
 
 export function getStaticPaths() {
   return PROYECTOS.map((proyecto) => ({ params: { slug: proyecto.slug }, props: { proyecto } }));
 }
 
 const { proyecto } = Astro.props;
+const conContrasena = CONFIG.password.enabled;
 ---
 
 <html lang="es">
@@ -18,6 +22,16 @@ const { proyecto } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{proyecto.title.toLowerCase()} · capilladelacruz</title>
     <meta name="theme-color" content="#ffffff" />
+    {conContrasena && (
+      // Antes de pintar: si aún no se ha puesto la contraseña en esta visita, se oculta el proyecto.
+      <script is:inline define:vars={{ clave: CLAVE_ACCESO }}>
+        try {
+          if (sessionStorage.getItem(clave) !== '1') document.documentElement.classList.add('bloqueado');
+        } catch (e) {
+          document.documentElement.classList.add('bloqueado');
+        }
+      </script>
+    )}
   </head>
   <body>
     <a class="volver" href="/">BACK</a>
@@ -26,10 +40,32 @@ const { proyecto } = Astro.props;
     </header>
     <!-- Aquí irá el archivo de fotos del proyecto. -->
     <main></main>
+    {conContrasena && <Candado backHref="/" />}
   </body>
 </html>
 
+<script>
+  import { Candado, hayQuePedir } from '../../scripts/candado';
+
+  const el = document.querySelector<HTMLElement>('[data-candado]');
+  if (el && hayQuePedir()) {
+    new Candado(el).pedir().then((ok) => {
+      if (ok) document.documentElement.classList.remove('bloqueado');
+    });
+  } else {
+    document.documentElement.classList.remove('bloqueado');
+  }
+</script>
+
 <style>
+  /* Proyecto oculto hasta poner la contraseña (aparece con un fundido). */
+  :global(.volver, header, main) {
+    transition: opacity 0.6s ease;
+  }
+  :global(html.bloqueado .volver, html.bloqueado header, html.bloqueado main) {
+    opacity: 0;
+    visibility: hidden;
+  }
   :global(html, body) {
     margin: 0;
     min-height: 100%;

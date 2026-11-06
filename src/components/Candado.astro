@@ -1,0 +1,202 @@
+---
+/**
+ * Panel de contraseña para entrar en los proyectos: dos piezas de puzzle negras,
+ * ligeramente separadas, con una línea fina para escribir.
+ * La lógica está en src/scripts/candado.ts (la usan la home y /proyectos/[slug]).
+ * Se quita con CONFIG.password.enabled = false.
+ */
+interface Props {
+  /** Si se pasa, "BACK" es un enlace (página directa del proyecto); si no, un botón. */
+  backHref?: string;
+}
+const { backHref } = Astro.props;
+
+// Piezas en un lienzo de 340 × 64. La junta está en x = 170 y tiene un saliente
+// redondo (pieza izquierda) que encaja en el hueco de la pieza derecha.
+const W = 340;
+const H = 64;
+const J = 170; // x de la junta
+const junta = (dir: 1 | 0) =>
+  dir
+    ? `L${J},23 L${J + 2},23 A7 7 0 1 1 ${J + 2},33 L${J},33` // bajando (pieza izquierda)
+    : `L${J},33 L${J + 2},33 A7 7 0 1 0 ${J + 2},23 L${J},23`; // subiendo (pieza derecha)
+const izquierda = `M0,0 L${J},0 ${junta(1)} L${J},${H} L0,${H} Z`;
+const derecha = `M${W},0 L${W},${H} L${J},${H} ${junta(0)} L${J},0 Z`;
+const LINEA_Y = 45;
+---
+
+<div class="candado" data-candado hidden>
+  {backHref ? (
+    <a class="candado__back" href={backHref} data-candado-back>BACK</a>
+  ) : (
+    <button type="button" class="candado__back" data-candado-back>BACK</button>
+  )}
+
+  <form class="candado__panel" data-candado-panel autocomplete="off" novalidate>
+    <svg class="candado__piezas" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      <rect class="candado__unido" data-candado-unido x="0" y="0" width={W} height={H} />
+      <g data-pieza="izq">
+        <path class="candado__pieza" d={izquierda} />
+        <line class="candado__linea" x1="40" y1={LINEA_Y} x2={J} y2={LINEA_Y} />
+      </g>
+      <g data-pieza="der">
+        <path class="candado__pieza" d={derecha} />
+        <line class="candado__linea" x1={J} y1={LINEA_Y} x2={W - 40} y2={LINEA_Y} />
+      </g>
+    </svg>
+
+    <div class="candado__campos" data-candado-campos>
+      <input
+        class="candado__input"
+        data-candado-input
+        type="password"
+        name="contrasena"
+        placeholder="contraseña"
+        aria-label="contraseña"
+        autocomplete="off"
+        autocapitalize="characters"
+        autocorrect="off"
+        spellcheck="false"
+        enterkeyhint="go"
+      />
+      <button class="candado__ok" type="submit" aria-label="entrar">→</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .candado {
+    /* Se ajusta al viewport visible: en móvil el teclado no tapa el panel. */
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--vv-top, 0px);
+    height: var(--vv-h, 100%);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #000;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .candado.visible {
+    opacity: 1;
+  }
+  .candado[hidden] {
+    display: none;
+  }
+
+  .candado__back {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: #000;
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-decoration: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .candado__back:hover,
+  .candado__back:focus-visible {
+    opacity: 1;
+  }
+
+  .candado__panel {
+    position: relative;
+    width: min(340px, calc(100vw - 64px));
+    aspect-ratio: 340 / 64;
+    margin: 0;
+  }
+
+  .candado__piezas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .candado__pieza,
+  .candado__unido {
+    fill: #000;
+  }
+  .candado__unido {
+    opacity: 0; /* tapa la junta cuando las piezas ya han encajado */
+  }
+  .candado__linea {
+    stroke: #fff;
+    stroke-width: 0.6;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.55;
+  }
+
+  /* Texto en "difference": blanco sobre las piezas, negro sobre el hueco blanco. */
+  .candado__campos {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 22%;
+    height: 46%;
+    mix-blend-mode: difference;
+  }
+  .candado__input {
+    position: absolute;
+    inset: 0 12%;
+    width: 76%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: #fff;
+    caret-color: #fff;
+    font: inherit;
+    font-size: 16px; /* 16px: iOS no hace zoom al enfocar */
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-align: center;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .candado__input::placeholder {
+    color: #fff;
+    opacity: 0.6;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: lowercase;
+  }
+  .candado__ok {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 3%;
+    width: 8%;
+    min-width: 28px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 300;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.3s ease;
+  }
+  .candado__ok:hover,
+  .candado__ok:focus-visible {
+    opacity: 1;
+    outline: none;
+  }
+</style>

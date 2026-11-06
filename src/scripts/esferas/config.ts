@@ -25,9 +25,9 @@ interface Slot {
 export const CONFIG = {
   /** Aspecto de los puntos. */
   look: {
-    pointSize: 0.9, // px CSS a la distancia de referencia
+    pointSize: 1.45, // px CSS a la distancia de referencia
     maxPointSize: 4, // px CSS máximos (cuando la cámara atraviesa la nube)
-    opacity: 0.4, // alfa base de cada punto
+    opacity: 0.21, // alfa base de cada punto
     depthFade: 0.08, // 0 = sin efecto · 1 = el fondo de la esfera casi desaparece
     color: '#000000', // partículas
     background: '#ffffff',
@@ -38,44 +38,44 @@ export const CONFIG = {
 
   /** Reparto de las partículas dentro de cada esfera (proporciones relativas). */
   distribution: {
-    shell: 0.35, // cáscara: borde denso y definido
-    interior: 0.12, // relleno vaporoso
-    funnel: 0.4, // núcleo: las partículas que forman la gravedad central
+    shell: 0.94, // cáscara: borde denso y definido
+    interior: 0, // relleno vaporoso
+    funnel: 0.02, // núcleo: las partículas que forman la gravedad central
     halo: 0.1, // partículas sueltas que se disuelven hacia fuera
-    shellThickness: 0.02, // grosor de la cáscara (radio = 1)
+    shellThickness: 0.032, // grosor de la cáscara (radio = 1)
     funnelAngle: 0.6, // apertura de los conos del reloj de arena (radianes)
-    funnelRays: 56, // nº de vetas radiales del reloj de arena
-    haloSpread: 0.22, // cuánto se aleja el halo
+    funnelRays: 60, // nº de vetas radiales del reloj de arena
+    haloSpread: 0, // cuánto se aleja el halo
   },
 
   /** Flujo interno (todo se calcula en el vertex shader). */
   flow: {
-    speed: 0.305, // velocidad del flujo de curl noise
-    noiseScale: 0.96, // tamaño de los remolinos (más alto = más pequeños)
-    amplitude: 0.07, // cuánto desplaza el flujo a cada partícula
-    swirl: 4, // torsión del vórtice alrededor del eje
-    shellPull: 1, // 1 = la cáscara se queda pegada a la superficie
+    speed: 0.135, // velocidad del flujo de curl noise
+    noiseScale: 0.52, // tamaño de los remolinos (más alto = más pequeños)
+    amplitude: 0.295, // cuánto desplaza el flujo a cada partícula
+    swirl: 3.34, // torsión del vórtice alrededor del eje
+    shellPull: 0, // 1 = la cáscara se queda pegada a la superficie
     density: 0.34, // contraste de las zonas oscuras / huecos que se abren y cierran
-    breath: 0.042, // pulsación de escala (respiración)
-    rotationSpeed: 0.205, // giro lento de la esfera (rad/s)
+    breath: 0.021, // pulsación de escala (respiración)
+    rotationSpeed: 0.365, // giro lento de la esfera (rad/s)
   },
 
   /** Gravedad central: la forma hacia la que se atraen las partículas del núcleo. */
   gravity: {
     /** Forma por esfera (slug → forma). Las que falten toman la de proyectos.ts. */
-    shapes: { 'materia-oscura': 'reloj', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
-    strength: 1.26, // fuerza de atracción (0 = sin forma · 1 = forma nítida · 2 = arrastra también el interior)
-    coreRadius: 0.42, // tamaño del núcleo (anchura de los conos, radio del anillo, del punto…)
-    twist: 1.7, // torsión del remolino alrededor del eje de la gravedad
-    tilt: 9, // inclinación del eje (grados)
-    spinSpeed: 0.12, // velocidad de giro de la gravedad (rad/s)
+    shapes: { 'materia-oscura': 'columna', 'humo-atrapado': 'espiral', 'nucleo-blanco': 'punto' } as Record<string, GravityShape>,
+    strength: 1.17, // fuerza de atracción (0 = sin forma · 1 = forma nítida · 2 = arrastra también el interior)
+    coreRadius: 0.45, // tamaño del núcleo (anchura de los conos, radio del anillo, del punto…)
+    twist: 1.83, // torsión del remolino alrededor del eje de la gravedad
+    tilt: -52, // inclinación del eje (grados)
+    spinSpeed: 0.1, // velocidad de giro de la gravedad (rad/s)
   },
 
   /** Entrada en una esfera (al pulsarla). El fondo se queda blanco. */
   entry: {
     mode: 'expansión' as EntryMode,
     duration: 3.3,
-    ease: 'circ.inOut',
+    ease: 'expo.inOut',
     finalDensity: 0.07, // 0…1: cuánto crecen y se densifican las partículas al final
     darkness: 0, // 0…1: cuánto se oscurece la pantalla en el punto máximo
     fadeDuration: 0.8, // con prefers-reduced-motion (fundido simple)
@@ -96,22 +96,22 @@ export const CONFIG = {
   scene: {
     fov: 35,
     cameraZ: 10,
-    parallax: 2, // desplazamiento de cámara con ratón / giroscopio (solo «flotando»)
-    drift: 0.45, // amplitud de la deriva de cada esfera (solo «flotando»)
+    parallax: 0, // desplazamiento de cámara con ratón / giroscopio (solo «flotando»)
+    drift: 0.63, // amplitud de la deriva de cada esfera (solo «flotando»)
     driftSpeed: 0.029, // velocidad de la deriva
     minSeparation: 0.95, // distancia mínima entre centros, en (r1 + r2)
-    titlePadding: 66, // px libres alrededor de "capilladelacruz" (solo «flotando»)
+    titlePadding: 0, // px libres alrededor de "capilladelacruz" (solo «flotando»)
     /**
      * Composición:
      *  'fila'     → nombre en el centro exacto y las esferas en fila debajo, fijas, mismo tamaño.
      *  'flotando' → composición anterior: esferas repartidas que derivan (usa `layout`).
      */
-    composition: 'fila' as Composition,
+    composition: 'flotando' as Composition,
     /** Ajustes de la composición en fila. */
     row: {
-      size: 0.51, // radio de cada esfera (unidades de escena)
-      gap: 0.39, // separación entre bordes de esferas (unidades de escena)
-      titleGap: 84, // px entre el nombre (centro exacto de la pantalla) y la parte de arriba de la fila
+      size: 0.23, // radio de cada esfera (unidades de escena)
+      gap: 1.13, // separación entre bordes de esferas (unidades de escena)
+      titleGap: 200, // px entre el nombre (centro exacto de la pantalla) y la parte de arriba de la fila
       sideMargin: 0.08, // margen mínimo a cada lado, en fracción del ancho (móvil)
       particleCount: 20000, // mismo nº de partículas en todas → misma densidad
     },
@@ -132,6 +132,16 @@ export const CONFIG = {
         { x: -0.35, y: -0.78, z: -3.5 },
       ] as Slot[],
     },
+  },
+
+  /**
+   * Contraseña para entrar en los proyectos (se comprueba en el navegador, sin servidor:
+   * no es seguridad real, solo parte de la experiencia). Para quitarla: enabled: false.
+   * No distingue mayúsculas ni espacios.
+   */
+  password: {
+    enabled: true,
+    value: 'QUESERADENOSOTROS',
   },
 
   /** Rendimiento. */

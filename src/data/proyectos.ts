@@ -48,7 +48,7 @@ export const PROYECTOS: Proyecto[] = [
     size: 0.9,
     seed: 7,
     particleCount: 45000,
-    gravity: 'reloj',
+    gravity: 'columna',
   },
   {
     slug: 'humo-atrapado',

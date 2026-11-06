@@ -7,6 +7,7 @@
  * - Al pulsar una esfera: sus partículas llenan la pantalla → página del proyecto (blanca).
  */
 import { PROYECTOS } from '../data/proyectos';
+import Candado from './Candado.astro';
 ---
 
 <div id="esferas" class="esferas">
@@ -28,11 +29,14 @@ import { PROYECTOS } from '../data/proyectos';
     <!-- Aquí irá el archivo de fotos del proyecto. -->
     <div class="proyecto__archivo" data-proyecto-archivo></div>
   </section>
+
+  <Candado />
 </div>
 
 <script>
   import { PROYECTOS } from '../data/proyectos';
   import type { EsferasScene } from '../scripts/esferas/EsferasScene';
+  import { Candado, hayQuePedir } from '../scripts/candado';
 
   const root = document.getElementById('esferas')!;
   const final = document.getElementById('final');
@@ -40,6 +44,9 @@ import { PROYECTOS } from '../data/proyectos';
   const panel = root.querySelector<HTMLElement>('[data-proyecto]')!;
   const volver = root.querySelector<HTMLButtonElement>('[data-volver]')!;
   const panelTitulo = root.querySelector<HTMLElement>('[data-proyecto-titulo]')!;
+
+  // "BACK" en el panel de contraseña = lo mismo que "BACK" en el proyecto.
+  const candado = new Candado(root.querySelector('[data-candado]')!, { onBack: () => salir() });
 
   let scene: EsferasScene | null = null;
   let preparing: Promise<EsferasScene | null> | null = null;
@@ -86,17 +93,22 @@ import { PROYECTOS } from '../data/proyectos';
     if (!proyecto || !scene || scene.state !== 'idle') return;
 
     await scene.enter(slug);
+    if (push) history.pushState({ proyecto: slug }, '', `/proyectos/${slug}`);
+
+    // Contraseña (solo la primera vez en la visita). Si se cancela, cerrar() ya se encarga.
+    if (hayQuePedir() && !(await candado.pedir())) return;
+    if (scene.state !== 'inside') return;
 
     panelTitulo.textContent = proyecto.title;
     panel.hidden = false;
     requestAnimationFrame(() => panel.classList.add('visible'));
-    if (push) history.pushState({ proyecto: slug }, '', `/proyectos/${slug}`);
     volver.focus({ preventScroll: true });
   }
 
   async function cerrar() {
     if (!scene || scene.state !== 'inside') return;
     const slug = history.state?.proyecto ?? null;
+    candado.cancelar();
     panel.classList.remove('visible');
     await wait(400);
     panel.hidden = true;
@@ -105,10 +117,11 @@ import { PROYECTOS } from '../data/proyectos';
   }
 
   // "volver": si entramos con pushState, retrocede en el historial (popstate cierra).
-  volver.addEventListener('click', () => {
+  function salir() {
     if (history.state?.proyecto) history.back();
     else cerrar();
-  });
+  }
+  volver.addEventListener('click', salir);
   panel.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') volver.click();
   });
