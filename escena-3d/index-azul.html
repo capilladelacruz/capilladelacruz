@@ -1,0 +1,1723 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CAPILLADELACRUZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #020409;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    color: #d8e2f2;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #escena {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+    touch-action: none;
+    cursor: grab;
+  }
+  #escena.sobre-luz { cursor: pointer; }
+  #escena:active { cursor: grabbing; }
+
+  /* ── Etiquetas HTML proyectadas sobre posiciones 3D */
+  #etiquetas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .titulo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 14px 0 14px 0.62em; /* compensa el espaciado tras la última letra */
+    border: 0;
+    background: none;
+    color: rgba(232, 240, 252, 0.88);
+    font-family: "Syne", sans-serif;
+    font-weight: 400;
+    font-size: clamp(12px, 1.5vw, 21px);
+    letter-spacing: 0.62em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color 0.5s ease;
+    will-change: transform, opacity;
+  }
+  /* halo azul muy tenue detrás del texto, solo para que se lea */
+  .titulo::before {
+    content: "";
+    position: absolute;
+    inset: -90% -18%;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgba(61, 123, 255, 0.22), rgba(61, 123, 255, 0) 100%);
+    opacity: var(--halo, 0.5);
+    pointer-events: none;
+  }
+  .titulo:hover, .titulo:focus-visible {
+    color: #fff;
+    outline: none;
+  }
+  .proyecto {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: rgba(220, 232, 250, 0.85);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+    will-change: transform, opacity;
+  }
+  .proyecto.visible { opacity: 1; }
+
+  #ayuda {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    padding: 0 16px;
+    text-align: center;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    line-height: 1.8;
+    color: rgba(200, 215, 240, 0.36);
+    pointer-events: none;
+    transition: opacity 3s ease;
+  }
+  #ayuda.oculta { opacity: 0; }
+
+  #fundido {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    pointer-events: none;
+    transition: opacity 2.8s ease;
+  }
+  #fundido.fuera { opacity: 0; }
+
+  /* ── AJUSTES */
+  #ajustes-btn {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: 18px;
+    z-index: 11;
+    padding: 6px 2px;
+    border: 0;
+    background: none;
+    color: rgba(200, 215, 240, 0.45);
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  #ajustes-btn:hover, #ajustes-btn[aria-expanded="true"] { color: rgba(232, 243, 255, 0.95); }
+
+  #panel {
+    position: fixed;
+    top: calc(max(16px, env(safe-area-inset-top)) + 30px);
+    right: 16px;
+    z-index: 10;
+    width: 300px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 80px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    border: 1px solid rgba(143, 194, 255, 0.12);
+    background: rgba(4, 8, 16, 0.86);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(143, 194, 255, 0.25) transparent;
+  }
+  #panel[hidden] { display: none; }
+  #panel .lil-gui {
+    --background-color: transparent;
+    --widget-color: rgba(143, 194, 255, 0.07);
+    --hover-color: rgba(143, 194, 255, 0.14);
+    --focus-color: rgba(143, 194, 255, 0.2);
+    --number-color: #8fc2ff;
+    --string-color: #cfe2ff;
+    --text-color: rgba(214, 226, 245, 0.82);
+    --title-background-color: rgba(143, 194, 255, 0.05);
+    --title-text-color: #e8f3ff;
+    --font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --font-size: 10px;
+    --input-font-size: 10px;
+    --widget-height: 19px;
+    --widget-border-radius: 1px;
+    --name-width: 44%;
+    --folder-indent: 8px;
+    width: 100% !important;
+    letter-spacing: 0.04em;
+  }
+  #panel .lil-gui.root > .title { letter-spacing: 0.28em; }
+  #panel .lil-gui .lil-gui > .title { letter-spacing: 0.16em; }
+
+  #pegar {
+    padding: 10px;
+    border-top: 1px solid rgba(143, 194, 255, 0.12);
+  }
+  #pegar[hidden] { display: none; }
+  #pegar textarea {
+    box-sizing: border-box;
+    width: 100%;
+    height: 160px;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid rgba(143, 194, 255, 0.18);
+    background: rgba(143, 194, 255, 0.05);
+    color: #cfe2ff;
+    font: 300 10px/1.5 "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    outline: none;
+  }
+  #pegar .fila { display: flex; gap: 8px; margin-top: 8px; }
+  #pegar button {
+    flex: 1;
+    padding: 6px 0;
+    border: 1px solid rgba(143, 194, 255, 0.2);
+    background: rgba(143, 194, 255, 0.06);
+    color: #e8f3ff;
+    font: 300 10px "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+  }
+  #pegar button:hover { background: rgba(143, 194, 255, 0.14); }
+
+  #aviso {
+    position: fixed;
+    top: calc(max(16px, env(safe-area-inset-top)) + 4px);
+    right: 110px;
+    z-index: 12;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: #8fc2ff;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+  }
+  #aviso.visible { opacity: 1; transform: none; }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="escena"></canvas>
+<div id="etiquetas">
+  <button class="titulo" id="titulo" type="button" aria-label="CAPILLADELACRUZ · volver al inicio">CAPILLADELACRUZ</button>
+</div>
+<div id="ayuda">ARRASTRAR · ORBITAR / RUEDA · ACERCAR / CLIC EN UNA LUZ · VIAJAR</div>
+<div id="fundido"></div>
+
+<button id="ajustes-btn" type="button" aria-expanded="false" aria-controls="panel">AJUSTES</button>
+<div id="panel" hidden>
+  <div id="panel-gui"></div>
+  <div id="pegar" hidden>
+    <textarea spellcheck="false" placeholder="Pega aquí el JSON de ajustes…"></textarea>
+    <div class="fila">
+      <button type="button" data-aplicar>APLICAR</button>
+      <button type="button" data-cancelar>CANCELAR</button>
+    </div>
+  </div>
+</div>
+<div id="aviso"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import GUI from 'lil-gui';
+
+/* ════════════════════════════════════════════════════════════════════════
+   CONFIG: valores por defecto (el panel AJUSTES modifica una copia)
+   ════════════════════════════════════════════════════════════════════════ */
+const DEFAULTS = {
+  // Exposición del tone mapping ACES. Más bajo = todo más oscuro.
+  exposure: 0.8,
+
+  colors: {
+    bgTop: '#060b16',      // fondo arriba
+    bgBottom: '#020409',   // fondo abajo
+    night: '#0c1e48',      // zona de azul noche en una parte del cielo
+    energy: '#3d7bff',     // energía: azul eléctrico
+    energyMid: '#8fc2ff',  // energía: azul claro
+    energyHot: '#e8f3ff',  // energía: blanco
+    warm: '#ff8a3d',       // acento cálido (solo en el corazón de cada proyecto)
+  },
+  sky: {
+    nightGlow: 0.55,       // fuerza de la zona azul noche (0 = nada)
+  },
+  bloom: {
+    strength: 0.95,
+    radius: 0.6,
+    threshold: 0.6,        // alto: solo brillan núcleos y filamentos
+  },
+  intensity: {
+    cores: 1.0,            // núcleos
+    filaments: 1.0,        // filamentos
+    filamentWidth: 1.6,    // grosor de los filamentos (px)
+    rays: 1.0,             // destellos en estrella
+    sparks: 1.0,           // chispas
+    titleHalo: 0.5,        // halo azul detrás del título
+  },
+  atmosphere: {
+    fog: 0.02,             // densidad de niebla
+    smokeAmount: 6,        // nº de láminas de humo ambiente (0–16)
+    smokeIntensity: 1.0,   // intensidad del humo ambiente
+    projectSmoke: 1.0,     // humo fibroso alrededor de cada proyecto
+    grain: 0.04,
+    vignette: 0.85,
+    aberration: 0.005,
+  },
+  dust: {
+    count: 5000,           // (máx. 12000)
+    size: 0.03,
+    brightness: 0.55,
+    stretch: 0.06,         // estela en la dirección del movimiento de cámara
+  },
+  stones: {
+    enabled: true,
+    rim: 0.7,              // borde de luz azul fría
+    field: 160,            // el campo se repite cada `field` unidades (infinito)
+    count: 34,
+    rotationSpeed: 0.03,
+  },
+  motion: {
+    autoRotate: true,
+    autoRotateSpeed: 0.18,
+    flySpeed: 14,          // WASD (Mayús = ×3)
+    damping: 0.06,         // suavidad de cámara (más bajo = más suave)
+    filamentSpeed: 1.0,
+    filamentNervous: 0.5,  // nerviosismo de los filamentos
+    flickerRate: 1.0,      // ritmo de parpadeo
+    sparkRate: 5,          // chispas por segundo y proyecto
+  },
+  shape: {
+    flare: 10,             // tamaño del destello/halo (× tamaño del proyecto)
+    smoke: 11,             // tamaño del humo de cada proyecto
+    filamentLength: 2.4,   // longitud de los filamentos
+    raysRest: 0.2,         // longitud de los rayos en reposo
+    raysAwake: 0.95,       // longitud de los rayos al pasar el ratón
+    hitRadius: 2.6,        // esfera invisible de clic
+  },
+  camera: {
+    fov: 55,
+    start: [0, 3.5, 40],
+    target: [0, 0, 0],
+    travelSeconds: 2.6,
+    travelDistance: 9,
+    homeSeconds: 2.8,
+    minDistance: 1.5,
+    maxDistance: 160,
+  },
+  // Cada proyecto con personalidad propia
+  projects: [
+    { id: 1, label: 'PROYECTO 01', position: [-14, 4, -9],  size: 1.0, filaments: 14, speed: 1.0, flicker: 1.0, rays: 6, warm: '#ff8a3d' },
+    { id: 2, label: 'PROYECTO 02', position: [12, -3, -15], size: 0.8, filaments: 9,  speed: 1.5, flicker: 1.7, rays: 4, warm: '#ff8a3d' },
+    { id: 3, label: 'PROYECTO 03', position: [19, 7, 8],    size: 1.2, filaments: 18, speed: 0.7, flicker: 0.6, rays: 8, warm: '#ff8a3d' },
+    { id: 4, label: 'PROYECTO 04', position: [-9, -6, 15],  size: 0.9, filaments: 8,  speed: 1.9, flicker: 2.3, rays: 4, warm: '#ff8a3d' },
+    { id: 5, label: 'PROYECTO 05', position: [3, 12, -26],  size: 1.4, filaments: 20, speed: 0.5, flicker: 0.8, rays: 6, warm: '#ff8a3d' },
+  ],
+  ui: {
+    hintSeconds: 7,
+  },
+};
+
+/* Se llama al llegar a un proyecto. Conectar aquí la página de cada proyecto. */
+function onProjectOpen(id) {
+  // p. ej.: window.location.href = `/proyectos/${id}`;
+}
+
+const STORAGE_KEY = 'capilla:ajustes:v1';
+const CONFIG = structuredClone(DEFAULTS);
+const isTouch = matchMedia('(pointer: coarse)').matches;
+
+/** Copia valores de `src` sobre `dst` solo en claves existentes y del mismo tipo (no rompe referencias). */
+function deepAssign(dst, src) {
+  if (!src || typeof src !== 'object') return;
+  for (const k of Object.keys(dst)) {
+    if (!(k in src)) continue;
+    const a = dst[k], b = src[k];
+    if (a && typeof a === 'object') {
+      if (b && typeof b === 'object') deepAssign(a, b);
+    } else if (typeof a === typeof b) {
+      dst[k] = b;
+    }
+  }
+}
+let saved = null;
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch {}
+if (saved) deepAssign(CONFIG, saved);
+else if (isTouch) CONFIG.dust.count = 2500;
+
+/* ════════════════════════════════════════════════════════════════════════
+   BASE: renderer, escena, utilidades
+   ════════════════════════════════════════════════════════════════════════ */
+const canvas = document.getElementById('escena');
+const PIXEL_RATIO_MAX = 2;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_RATIO_MAX));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = CONFIG.exposure;
+renderer.shadowMap.enabled = false;
+
+const scene = new THREE.Scene();
+
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (a, b) => a + Math.random() * (b - a);
+const smoother = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+// Ruido 1D (parpadeo irregular: nada de senos perfectos)
+const hash1 = (n) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+const noise1 = (x) => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return lerp(hash1(i), hash1(i + 1), u); };
+const fbm1 = (x) => (noise1(x) * 0.5 + noise1(x * 2.03 + 17.3) * 0.25 + noise1(x * 4.01 + 41.7) * 0.125) / 0.875;
+
+// Ruido 3D en GLSL compartido
+const GLSL_NOISE = /* glsl */ `
+  float hash3(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  }
+  float noise3(vec3 x) {
+    vec3 i = floor(x);
+    vec3 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash3(i + vec3(0,0,0)), hash3(i + vec3(1,0,0)), f.x),
+                   mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
+                   mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z);
+  }
+  float fbm(vec3 p) {
+    float s = 0.0, a = 0.5;
+    for (int i = 0; i < 5; i++) { s += a * noise3(p); p = p * 2.02 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
+    return s;
+  }
+  float fbm4(vec3 p) {
+    float s = 0.0, a = 0.5;
+    for (int i = 0; i < 4; i++) { s += a * noise3(p); p = p * 2.03 + vec3(3.1, 1.7, 7.4); a *= 0.5; }
+    return s / 0.9375;
+  }
+`;
+
+// Vértice "billboard": el plano siempre mira a la cámara
+const GLSL_BILLBOARD = /* glsl */ `
+  uniform vec2 uSize;
+  varying vec2 vUv;
+  varying vec3 vWorld;
+  varying float vCamDist;
+  void main() {
+    vUv = uv;
+    vec3 center = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+    vec3 up    = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+    vec3 world = center + right * position.x * uSize.x + up * position.y * uSize.y;
+    vWorld = world;
+    vCamDist = distance(center, cameraPosition);
+    gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
+  }
+`;
+
+// Uniformes compartidos (se sincronizan desde CONFIG en cada fotograma)
+const U = {
+  time: { value: 0 },
+  fog: { value: CONFIG.atmosphere.fog },
+  res: { value: new THREE.Vector2(1, 1) },
+  pxScale: { value: 1 },     // px por unidad de mundo a distancia 1
+  energy: { value: new THREE.Color() },
+  mid: { value: new THREE.Color() },
+  hot: { value: new THREE.Color() },
+  bgTop: { value: new THREE.Color() },
+  bgBottom: { value: new THREE.Color() },
+  night: { value: new THREE.Color() },
+  fogColor: { value: new THREE.Color() },
+};
+const additive = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
+
+/* ════════════════════════════════════════════════════════════════════════
+   CÁMARA
+   ════════════════════════════════════════════════════════════════════════ */
+const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, window.innerWidth / window.innerHeight, 0.1, 1200);
+const HOME_POS = new THREE.Vector3(...CONFIG.camera.start);
+const HOME_TARGET = new THREE.Vector3(...CONFIG.camera.target);
+camera.position.copy(HOME_POS);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(HOME_TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = CONFIG.motion.damping;
+controls.screenSpacePanning = true;
+controls.zoomToCursor = true;
+controls.minDistance = CONFIG.camera.minDistance;
+controls.maxDistance = CONFIG.camera.maxDistance;
+controls.rotateSpeed = 0.55;
+controls.zoomSpeed = 0.8;
+controls.panSpeed = 0.8;
+controls.autoRotate = CONFIG.motion.autoRotate;
+controls.autoRotateSpeed = CONFIG.motion.autoRotateSpeed;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+controls.update();
+
+// Deja de girar sola en cuanto el usuario toca
+const stopAutoRotate = () => { controls.autoRotate = false; };
+controls.addEventListener('start', stopAutoRotate);
+
+/* ════════════════════════════════════════════════════════════════════════
+   CIELO: negro azulado con una zona de azul noche apenas perceptible
+   ════════════════════════════════════════════════════════════════════════ */
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  depthWrite: false,
+  depthTest: false,
+  uniforms: {
+    uTop: U.bgTop,
+    uBottom: U.bgBottom,
+    uNight: U.night,
+    uNightGlow: { value: 0 },
+    uNightDir: { value: new THREE.Vector3(-0.55, 0.3, -0.78).normalize() },
+    uTime: U.time,
+  },
+  vertexShader: /* glsl */ `
+    varying vec3 vDir;
+    void main() {
+      vDir = normalize(position);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform vec3 uTop, uBottom, uNight, uNightDir;
+    uniform float uNightGlow, uTime;
+    varying vec3 vDir;
+    ${GLSL_NOISE}
+    void main() {
+      vec3 d = normalize(vDir);
+      vec3 col = mix(uBottom, uTop, smoothstep(-0.35, 0.65, d.y));
+      // zona de azul noche, irregular, muy tenue
+      float z = max(dot(d, uNightDir), 0.0);
+      float cloud = fbm(d * 2.6 + vec3(uTime * 0.004, 0.0, uTime * 0.003));
+      col += uNight * pow(z, 3.0) * uNightGlow * (0.45 + 0.9 * cloud);
+      col *= 0.85 + 0.3 * fbm(d * 4.0 - vec3(uTime * 0.005));
+      // dither contra bandas
+      col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), skyMat);
+sky.renderOrder = -1000;
+sky.frustumCulled = false;
+scene.add(sky);
+
+/* ════════════════════════════════════════════════════════════════════════
+   POLVO: partículas infinitas alrededor de la cámara (mod en shader),
+   algunas alargadas en la dirección del movimiento
+   ════════════════════════════════════════════════════════════════════════ */
+const DUST_MAX = 12000;
+const DUST_BOX = 70;
+const dustGeo = new THREE.BufferGeometry();
+{
+  const pos = new Float32Array(DUST_MAX * 3);
+  const rnd = new Float32Array(DUST_MAX);
+  for (let i = 0; i < DUST_MAX; i++) {
+    pos[i * 3] = Math.random() * DUST_BOX;
+    pos[i * 3 + 1] = Math.random() * DUST_BOX;
+    pos[i * 3 + 2] = Math.random() * DUST_BOX;
+    rnd[i] = Math.random();
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  dustGeo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+}
+const camVel = new THREE.Vector3();
+const dustMat = new THREE.ShaderMaterial({
+  ...additive,
+  uniforms: {
+    uTime: U.time,
+    uFog: U.fog,
+    uRes: U.res,
+    uScale: U.pxScale,
+    uColor: U.mid,
+    uBox: { value: DUST_BOX },
+    uSize: { value: 0.03 },
+    uOpacity: { value: 0.5 },
+    uStretch: { value: 0.06 },
+    uVel: { value: camVel },
+  },
+  vertexShader: /* glsl */ `
+    uniform float uTime, uBox, uSize, uScale, uFog, uStretch;
+    uniform vec3 uVel;
+    uniform vec2 uRes;
+    attribute float aRand;
+    varying float vAlpha;
+    varying vec2 vDir;
+    varying float vHalf;
+    varying float vRad;
+    void main() {
+      vec3 p = position + vec3(0.09, -0.03, 0.06) * uTime * (0.6 + aRand);
+      p += vec3(sin(uTime * 0.11 + aRand * 40.0), cos(uTime * 0.09 + aRand * 23.0), sin(uTime * 0.07 + aRand * 17.0)) * 0.25;
+      // posición relativa a la cámara, repetida en un cubo: nunca se acaba
+      vec3 rel = mod(p - cameraPosition, uBox) - uBox * 0.5;
+      vec3 world = cameraPosition + rel;
+      vec4 mv = viewMatrix * vec4(world, 1.0);
+      vec4 c0 = projectionMatrix * mv;
+      gl_Position = c0;
+      float depth = -mv.z;
+      float base = max(1.0, uSize * uScale / max(depth, 0.1));
+
+      // estela: solo la mitad de las partículas, según la velocidad de la cámara
+      float st = aRand > 0.5 ? uStretch * (aRand - 0.5) * 2.0 : 0.0;
+      vec4 c1 = projectionMatrix * viewMatrix * vec4(world - uVel * st, 1.0);
+      vec2 dpx = (c0.xy / c0.w - c1.xy / max(c1.w, 0.001)) * 0.5 * uRes;
+      float len = c1.w > 0.0 ? min(length(dpx), 60.0) : 0.0;
+      float sizePx = base + len;
+      gl_PointSize = sizePx;
+      vDir = len > 0.01 ? normalize(dpx) : vec2(1.0, 0.0);
+      vHalf = 0.5 * len / sizePx;
+      vRad = 0.5 * base / sizePx;
+
+      float edge = 1.0 - smoothstep(0.55, 1.0, length(rel) / (uBox * 0.5));
+      float near = smoothstep(0.4, 2.0, depth);
+      float fog = exp(-uFog * uFog * depth * depth);
+      float twinkle = 0.65 + 0.35 * sin(uTime * (0.4 + aRand) + aRand * 60.0);
+      vAlpha = edge * near * fog * twinkle * (0.3 + 0.7 * aRand) * sqrt(base / sizePx);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform vec3 uColor;
+    uniform float uOpacity;
+    varying float vAlpha;
+    varying vec2 vDir;
+    varying float vHalf;
+    varying float vRad;
+    void main() {
+      vec2 c = gl_PointCoord - 0.5;
+      c.y = -c.y;
+      float along = dot(c, vDir);
+      float perp = dot(c, vec2(-vDir.y, vDir.x));
+      float d = length(vec2(max(abs(along) - vHalf, 0.0), perp));
+      float a = smoothstep(vRad, 0.0, d);
+      gl_FragColor = vec4(uColor * a * vAlpha * uOpacity, 1.0);
+    }
+  `,
+});
+const dust = new THREE.Points(dustGeo, dustMat);
+dust.frustumCulled = false;
+scene.add(dust);
+
+/* ════════════════════════════════════════════════════════════════════════
+   PIEDRAS: pocas, lejanas, casi invisibles, solo con un borde de luz fría
+   ════════════════════════════════════════════════════════════════════════ */
+function makeStoneGeometry(detail, jitter) {
+  const g = new THREE.IcosahedronGeometry(1, detail);
+  const pos = g.attributes.position;
+  const offsets = new Map(); // mismo desplazamiento para vértices repetidos (caras cerradas)
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const key = `${v.x.toFixed(4)},${v.y.toFixed(4)},${v.z.toFixed(4)}`;
+    if (!offsets.has(key)) offsets.set(key, 1 + (Math.random() - 0.5) * jitter);
+    v.multiplyScalar(offsets.get(key));
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  return g;
+}
+const stoneMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uRimColor: U.mid,
+    uRim: { value: 0.7 },
+    uFog: U.fog,
+    uFogColor: U.fogColor,
+  },
+  vertexShader: /* glsl */ `
+    varying vec3 vWorld;
+    void main() {
+      vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
+      vWorld = wp.xyz;
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform vec3 uRimColor, uFogColor;
+    uniform float uRim, uFog;
+    varying vec3 vWorld;
+    void main() {
+      vec3 cr = cross(dFdx(vWorld), dFdy(vWorld));            // caras planas (low-poly)
+      vec3 n = length(cr) > 1e-12 ? normalize(cr) : vec3(0.0, 1.0, 0.0);
+      vec3 v = normalize(cameraPosition - vWorld);
+      if (dot(n, v) < 0.0) n = -n;
+      // clamp: pow() de un negativo da NaN y el bloom lo convierte en un bloque negro
+      float fr = pow(clamp(1.0 - dot(n, v), 0.0, 1.0), 4.0);
+      float top = 0.45 + 0.55 * max(n.y, 0.0);         // luz fría que viene de arriba
+      vec3 col = vec3(0.004, 0.006, 0.012) + uRimColor * fr * top * uRim * 0.35;
+      float d = length(cameraPosition - vWorld);
+      float f = 1.0 - exp(-((uFog * d) * (uFog * d)));
+      gl_FragColor = vec4(mix(col, uFogColor, f), 1.0);
+    }
+  `,
+});
+const stoneVariants = [makeStoneGeometry(0, 0.55), makeStoneGeometry(0, 0.8), makeStoneGeometry(1, 0.45)];
+const stoneMeshes = [];
+const stones = [];
+{
+  const n = CONFIG.stones.count;
+  const per = Math.ceil(n / stoneVariants.length);
+  const half = CONFIG.stones.field / 2;
+  stoneVariants.forEach((geo, vi) => {
+    const count = Math.min(per, n - vi * per);
+    if (count <= 0) return;
+    const mesh = new THREE.InstancedMesh(geo, stoneMat, count);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    stoneMeshes.push(mesh);
+    for (let i = 0; i < count; i++) {
+      let p;
+      do {
+        p = new THREE.Vector3(rand(-half, half), rand(-half * 0.6, half * 0.6), rand(-half, half));
+      } while (p.length() < 30); // lejos del centro
+      const s = rand(0.6, 3.2);
+      stones.push({
+        mesh, index: i, base: p,
+        scale: new THREE.Vector3(s * rand(0.7, 1.3), s * rand(0.6, 1.1), s * rand(0.7, 1.3)),
+        axis: new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize(),
+        angle: rand(0, Math.PI * 2),
+        speed: rand(0.4, 1.4) * (Math.random() < 0.5 ? -1 : 1),
+      });
+    }
+  });
+}
+const _dummy = new THREE.Object3D();
+const _rel = new THREE.Vector3();
+const wrap = (x, m) => ((x % m) + m) % m;
+function updateStones(dt) {
+  const on = CONFIG.stones.enabled;
+  for (const m of stoneMeshes) m.visible = on;
+  if (!on) return;
+  const F = CONFIG.stones.field, half = F / 2, cam = camera.position;
+  for (const st of stones) {
+    st.angle += st.speed * CONFIG.stones.rotationSpeed * dt;
+    _rel.set(
+      wrap(st.base.x - cam.x + half, F) - half,
+      wrap(st.base.y - cam.y + half, F) - half,
+      wrap(st.base.z - cam.z + half, F) - half,
+    );
+    // en el borde del campo encogen hasta desaparecer (sin saltos al repetirse)
+    const e = Math.max(Math.abs(_rel.x), Math.abs(_rel.y), Math.abs(_rel.z)) / half;
+    const k = 1 - smoothstep(0.82, 1, e);
+    _dummy.position.copy(cam).add(_rel);
+    _dummy.quaternion.setFromAxisAngle(st.axis, st.angle);
+    _dummy.scale.copy(st.scale).multiplyScalar(Math.max(k, 0.0001));
+    _dummy.updateMatrix();
+    st.mesh.setMatrixAt(st.index, _dummy.matrix);
+  }
+  for (const m of stoneMeshes) m.instanceMatrix.needsUpdate = true;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   LUCES / PROYECTOS: núcleo + ámbar + estrella, filamentos, chispas, humo
+   ════════════════════════════════════════════════════════════════════════ */
+
+// ── Núcleo + puntito ámbar + destello en estrella (un solo billboard)
+const flareFrag = /* glsl */ `
+  uniform vec3 uHot, uMid, uEnergy, uWarm;
+  uniform float uCore, uLevel, uRays, uRayLen, uRayInt, uRot, uFog;
+  varying vec2 vUv;
+  varying float vCamDist;
+  void main() {
+    vec2 p = vUv * 2.0 - 1.0;
+    float r = length(p);
+    float core = exp(-r * r * 2600.0);
+    float warmDot = exp(-r * r * 9000.0);
+    float glow = exp(-r * 30.0) * 0.45 + exp(-r * 8.0) * 0.1 + exp(-r * 3.0) * 0.03;
+    glow *= smoothstep(1.0, 0.55, r);
+
+    float rays = 0.0;
+    for (int i = 0; i < 8; i++) {
+      if (float(i) >= uRays) break;
+      float a = uRot + 6.2831853 * float(i) / uRays;
+      vec2 dir = vec2(cos(a), sin(a));
+      float along = dot(p, dir);
+      float perp = abs(dot(p, vec2(-dir.y, dir.x)));
+      float len = uRayLen * (mod(float(i), 2.0) < 0.5 ? 1.0 : 0.6);
+      float fall = clamp(1.0 - along / len, 0.0, 1.0);
+      rays += exp(-perp * (240.0 + 600.0 * (1.0 - fall))) * fall * fall * smoothstep(-0.004, 0.02, along);
+    }
+
+    // de cerca el halo se contiene (no inunda la pantalla)
+    float near = mix(0.3, 1.0, smoothstep(3.0, 24.0, vCamDist));
+    float fog = exp(-((uFog * vCamDist * 0.5) * (uFog * vCamDist * 0.5)));
+
+    vec3 col = uHot * core * 7.0 * (1.0 - warmDot * 0.9)
+             + uWarm * warmDot * 3.2
+             + mix(uEnergy, uMid, 0.55) * glow * near
+             + mix(uMid, uHot, 0.4) * rays * uRayInt;
+    gl_FragColor = vec4(col * uCore * uLevel * fog, 1.0);
+  }
+`;
+
+// ── Filamentos: cintas finas orientadas a pantalla, deformadas con ruido en el shader
+const FIL_MAX = 32;
+const FIL_SEG = 56;
+const FIL_INDEX_PER = (FIL_SEG - 1) * 6;
+function makeFilamentGeometry() {
+  const vCount = FIL_MAX * FIL_SEG * 2;
+  const aT = new Float32Array(vCount);
+  const aSide = new Float32Array(vCount);
+  const aFil = new Float32Array(vCount * 4);
+  const index = [];
+  let v = 0;
+  for (let f = 0; f < FIL_MAX; f++) {
+    const seed = Math.random() * 1000;
+    const len = rand(0.45, 1.0);
+    const type = Math.random() < 0.45 ? 1 : 0; // 0 = sale y vuelve, 1 = abierto
+    const phase = Math.random();
+    const base = v;
+    for (let s = 0; s < FIL_SEG; s++) {
+      const t = s / (FIL_SEG - 1);
+      for (const side of [-1, 1]) {
+        aT[v] = t;
+        aSide[v] = side;
+        aFil.set([seed, len, type, phase], v * 4);
+        v++;
+      }
+      if (s < FIL_SEG - 1) {
+        const a = base + s * 2;
+        index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vCount * 3), 3));
+  g.setAttribute('aT', new THREE.BufferAttribute(aT, 1));
+  g.setAttribute('aSide', new THREE.BufferAttribute(aSide, 1));
+  g.setAttribute('aFil', new THREE.BufferAttribute(aFil, 4));
+  g.setIndex(index);
+  return g;
+}
+const filamentVert = /* glsl */ `
+  #define PI 3.14159265
+  attribute float aT;
+  attribute float aSide;
+  attribute vec4 aFil;
+  uniform float uTime, uNerv, uLen, uWidth;
+  uniform vec2 uRes;
+  varying float vT;
+  varying float vSide;
+  varying float vR;
+  varying float vType;
+  varying float vSurge;
+  varying float vDepth;
+  ${GLSL_NOISE}
+  float h1(float x) { return fract(sin(x * 127.1) * 43758.5453); }
+
+  vec3 path(float t) {
+    float seed = aFil.x, len = aFil.y * uLen, type = aFil.z, ph = aFil.w;
+    float T = uTime + ph * 10.0;
+    // dirección de salida (aleatoria y que deriva despacio)
+    float a = h1(seed) * 6.2831853 + T * 0.06 * (h1(seed + 3.0) - 0.5);
+    float z = h1(seed + 1.3) * 2.0 - 1.0;
+    float rr = sqrt(1.0 - z * z);
+    vec3 d = vec3(rr * cos(a), z, rr * sin(a));
+    vec3 up = abs(d.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 s1 = normalize(cross(d, up));
+    vec3 s2 = cross(d, s1);
+    float spin = T * 0.25 * (h1(seed + 5.0) - 0.5) * 2.0 + ph * 6.2831853;
+    vec3 side = s1 * cos(spin) + s2 * sin(spin);
+    float w = 0.25 + 0.5 * h1(seed + 2.0);
+    // forma base: un lazo que sale del núcleo y vuelve, o un trazo abierto
+    vec3 loopP = d * sin(PI * t) * len + side * sin(2.0 * PI * t) * len * w;
+    vec3 openP = d * t * len + side * sin(PI * t) * len * w * 0.5;
+    vec3 base = mix(loopP, openP, type);
+    float env = mix(sin(PI * t), t, type);    // anclado al núcleo
+    // retorcimiento: ruido 3D animado + capa nerviosa más rápida
+    vec3 q = vec3(t * 2.2, seed * 0.37, seed * 0.11) + vec3(0.0, T * 0.35, T * 0.27);
+    vec3 disp = vec3(noise3(q), noise3(q + vec3(17.1, 3.3, 0.0)), noise3(q + vec3(5.0, 29.7, 11.0))) - 0.5;
+    vec3 q2 = q * 3.1 + vec3(T * 1.3);
+    disp += (vec3(noise3(q2), noise3(q2 + vec3(7.7, 0.0, 3.0)), noise3(q2 + vec3(0.0, 13.0, 7.0))) - 0.5) * uNerv;
+    return base + disp * env * len * 1.3;
+  }
+
+  void main() {
+    vec3 c = modelMatrix[3].xyz;
+    float t = aT;
+    vec3 p = path(t);
+    vec3 pA = path(max(t - 0.015, 0.0));
+    vec3 pB = path(min(t + 0.015, 1.0));
+    mat4 vp = projectionMatrix * viewMatrix;
+    vec4 c1 = vp * vec4(c + p, 1.0);
+    vec4 cA = vp * vec4(c + pA, 1.0);
+    vec4 cB = vp * vec4(c + pB, 1.0);
+    vec2 dir = (cB.xy / max(cB.w, 0.001) - cA.xy / max(cA.w, 0.001)) * uRes;
+    float l = length(dir);
+    dir = l > 1e-5 ? dir / l : vec2(1.0, 0.0);
+    vec2 n = vec2(-dir.y, dir.x);
+    float w = uWidth * clamp(14.0 / max(c1.w, 0.001), 0.6, 2.5);
+    c1.xy += n * aSide * w / uRes * 2.0 * c1.w;
+    gl_Position = c1;
+
+    vT = t;
+    vSide = aSide;
+    vType = aFil.z;
+    vR = clamp(length(p) / (aFil.y * uLen * 0.9), 0.0, 1.0);
+    vSurge = 0.45 + 0.75 * noise3(vec3(aFil.x * 0.73, uTime * 1.4, 0.0));
+    vDepth = c1.w;
+  }
+`;
+const filamentFrag = /* glsl */ `
+  #define PI 3.14159265
+  uniform vec3 uHot, uMid, uEnergy;
+  uniform float uInt, uLevel, uFog;
+  varying float vT;
+  varying float vSide;
+  varying float vR;
+  varying float vType;
+  varying float vSurge;
+  varying float vDepth;
+  void main() {
+    float prof = exp(-vSide * vSide * 3.0);                 // perfil suave de la cinta
+    float loopFade = 1.0 - 0.8 * sin(PI * vT);              // se apaga lejos del núcleo
+    float openFade = pow(clamp(1.0 - vT, 0.0, 1.0), 1.4);                     // se apaga hacia la punta
+    float along = mix(loopFade, openFade, vType) * smoothstep(0.0, 0.03, min(vT, 1.0 - vT + vType));
+    along = max(along, 0.0);
+    vec3 col = mix(uHot, mix(uMid, uEnergy, 0.6), smoothstep(0.0, 0.8, vR));
+    float fog = exp(-((uFog * vDepth * 0.5) * (uFog * vDepth * 0.5)));
+    gl_FragColor = vec4(col * prof * along * vSurge * uInt * uLevel * fog * 2.2, 1.0);
+  }
+`;
+
+// ── Humo fibroso alrededor de cada proyecto (fbm con domain warping, iluminado desde el núcleo)
+const smokeFrag = /* glsl */ `
+  uniform vec3 uEnergy, uMid;
+  uniform float uTime, uInt, uLevel, uFog, uSeed;
+  varying vec2 vUv;
+  varying float vCamDist;
+  ${GLSL_NOISE}
+  void main() {
+    vec2 p = vUv * 2.0 - 1.0;
+    float r = length(p);
+    if (r > 1.0) discard;
+    vec3 q = vec3(p * 1.7, uSeed);
+    float T = uTime * 0.035;
+    vec3 w1 = vec3(fbm4(q + vec3(0.0, 0.0, T)), fbm4(q + vec3(5.2, 1.3, T * 1.3)), 0.0);
+    float f = fbm4(q + 2.4 * w1 + vec3(1.7, 9.2, T * 0.7));
+    float ridge = 1.0 - abs(f * 2.0 - 1.0);                // fibras
+    float dens = smoothstep(0.4, 0.85, f) * 0.5 + pow(clamp(ridge, 0.0, 1.0), 6.0) * 0.8;
+    float light = exp(-r * 3.4);                             // iluminado desde dentro
+    float edge = smoothstep(1.0, 0.35, r);
+    float near = smoothstep(1.5, 8.0, vCamDist);
+    float fog = exp(-((uFog * vCamDist * 0.5) * (uFog * vCamDist * 0.5)));
+    vec3 col = mix(uEnergy, uMid, light);
+    gl_FragColor = vec4(col * dens * light * edge * near * fog * uInt * uLevel * 0.22, 1.0);
+  }
+`;
+
+// ── Chispas: pocas partículas que nacen en el núcleo, flotan hacia fuera y se apagan
+const SPARKS_MAX = 48;
+const sparkVert = /* glsl */ `
+  attribute float aAlpha;
+  uniform float uScale, uFog;
+  varying float vA;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+    float depth = -mv.z;
+    gl_PointSize = clamp(0.035 * uScale / max(depth, 0.1), 1.0, 7.0);
+    vA = aAlpha * exp(-((uFog * depth * 0.5) * (uFog * depth * 0.5)));
+  }
+`;
+const sparkFrag = /* glsl */ `
+  uniform vec3 uHot, uMid;
+  uniform float uInt;
+  varying float vA;
+  void main() {
+    float d = length(gl_PointCoord - 0.5);
+    float a = smoothstep(0.5, 0.0, d);
+    gl_FragColor = vec4(mix(uHot, uMid, 0.35) * a * vA * uInt * 2.5, 1.0);
+  }
+`;
+
+const etiquetas = document.getElementById('etiquetas');
+const projects = CONFIG.projects.map((pc, i) => {
+  const group = new THREE.Group();
+  group.position.set(...pc.position);
+  scene.add(group);
+
+  const smoke = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.ShaderMaterial({
+      ...additive,
+      uniforms: {
+        uSize: { value: new THREE.Vector2() },
+        uEnergy: U.energy, uMid: U.mid, uTime: U.time, uFog: U.fog,
+        uInt: { value: 1 }, uLevel: { value: 1 }, uSeed: { value: i * 7.31 },
+      },
+      vertexShader: GLSL_BILLBOARD,
+      fragmentShader: smokeFrag,
+    }),
+  );
+  smoke.frustumCulled = false;
+  smoke.renderOrder = 1;
+  group.add(smoke);
+
+  const filaments = new THREE.Mesh(
+    makeFilamentGeometry(),
+    new THREE.ShaderMaterial({
+      ...additive,
+      side: THREE.DoubleSide,
+      uniforms: {
+        uTime: { value: 0 }, uNerv: { value: 0.5 }, uLen: { value: 2 }, uWidth: { value: 1.5 },
+        uRes: U.res, uFog: U.fog, uHot: U.hot, uMid: U.mid, uEnergy: U.energy,
+        uInt: { value: 1 }, uLevel: { value: 1 },
+      },
+      vertexShader: filamentVert,
+      fragmentShader: filamentFrag,
+    }),
+  );
+  filaments.frustumCulled = false;
+  filaments.renderOrder = 2;
+  group.add(filaments);
+
+  const flare = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.ShaderMaterial({
+      ...additive,
+      uniforms: {
+        uSize: { value: new THREE.Vector2() },
+        uHot: U.hot, uMid: U.mid, uEnergy: U.energy, uFog: U.fog,
+        uWarm: { value: new THREE.Color() },
+        uCore: { value: 1 }, uLevel: { value: 1 },
+        uRays: { value: pc.rays }, uRayLen: { value: 0.2 }, uRayInt: { value: 0.3 },
+        uRot: { value: Math.random() * Math.PI },
+      },
+      vertexShader: GLSL_BILLBOARD,
+      fragmentShader: flareFrag,
+    }),
+  );
+  flare.frustumCulled = false;
+  flare.renderOrder = 3;
+  group.add(flare);
+
+  // chispas
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkPos = new Float32Array(SPARKS_MAX * 3);
+  const sparkAlpha = new Float32Array(SPARKS_MAX);
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3).setUsage(THREE.DynamicDrawUsage));
+  sparkGeo.setAttribute('aAlpha', new THREE.BufferAttribute(sparkAlpha, 1).setUsage(THREE.DynamicDrawUsage));
+  const sparks = new THREE.Points(sparkGeo, new THREE.ShaderMaterial({
+    ...additive,
+    uniforms: { uScale: U.pxScale, uFog: U.fog, uHot: U.hot, uMid: U.mid, uInt: { value: 1 } },
+    vertexShader: sparkVert,
+    fragmentShader: sparkFrag,
+  }));
+  sparks.frustumCulled = false;
+  group.add(sparks);
+  const sparkState = Array.from({ length: SPARKS_MAX }, () => ({ age: 1, life: 1, vx: 0, vy: 0, vz: 0, seed: Math.random() * 100 }));
+
+  // esfera invisible, más grande que el núcleo, para acertar fácil
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial());
+  hit.visible = false;
+  hit.userData.projectIndex = i;
+  group.add(hit);
+
+  const label = document.createElement('div');
+  label.className = 'proyecto';
+  label.textContent = pc.label;
+  etiquetas.appendChild(label);
+
+  return {
+    pc, group, smoke, filaments, flare, sparks, sparkPos, sparkAlpha, sparkState, sparkAcc: 0, hit, label,
+    seed: i * 31.7 + 5.3,
+    ft: Math.random() * 100,   // tiempo propio del parpadeo
+    fil: Math.random() * 100,  // tiempo propio de los filamentos
+    surgeAt: -10,
+    flashAt: -10,
+    wake: 0,
+    level: 1,
+  };
+});
+const hitTargets = projects.map((p) => p.hit);
+let hovered = -1;
+let active = -1;
+
+function spawnSpark(p) {
+  const s = p.sparkState.find((x) => x.age >= x.life);
+  if (!s) return;
+  const i = p.sparkState.indexOf(s);
+  const size = p.pc.size;
+  const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, rr = Math.sqrt(1 - u * u);
+  const dx = rr * Math.cos(a), dy = u, dz = rr * Math.sin(a);
+  const r0 = 0.08 * size;
+  p.sparkPos.set([dx * r0, dy * r0, dz * r0], i * 3);
+  const sp = rand(0.25, 1.1) * size;
+  s.vx = dx * sp; s.vy = dy * sp + 0.15 * size; s.vz = dz * sp;
+  s.age = 0;
+  s.life = rand(1.0, 2.6);
+}
+function updateSparks(p, dt, t) {
+  p.sparkAcc += CONFIG.motion.sparkRate * dt * (0.6 + 0.4 * p.pc.speed);
+  while (p.sparkAcc >= 1) { p.sparkAcc -= 1; spawnSpark(p); }
+  const pos = p.sparkPos, al = p.sparkAlpha;
+  const drag = Math.exp(-0.7 * dt);
+  for (let i = 0; i < SPARKS_MAX; i++) {
+    const s = p.sparkState[i];
+    if (s.age >= s.life) { al[i] = 0; continue; }
+    s.age += dt;
+    // pequeña turbulencia para que no vayan rectas
+    s.vx = s.vx * drag + (noise1(t * 2 + s.seed) - 0.5) * 0.6 * dt;
+    s.vy = s.vy * drag + (noise1(t * 2 + s.seed + 9) - 0.5) * 0.6 * dt;
+    s.vz = s.vz * drag + (noise1(t * 2 + s.seed + 19) - 0.5) * 0.6 * dt;
+    pos[i * 3] += s.vx * dt;
+    pos[i * 3 + 1] += s.vy * dt;
+    pos[i * 3 + 2] += s.vz * dt;
+    const f = Math.min(1, s.age / s.life);
+    al[i] = Math.pow(1 - f, 1.5) * smoothstep(0, 0.08, f) * (0.6 + 0.4 * noise1(t * 9 + s.seed));
+  }
+  p.sparks.geometry.attributes.position.needsUpdate = true;
+  p.sparks.geometry.attributes.aAlpha.needsUpdate = true;
+}
+
+function updateProjects(t, dt) {
+  const M = CONFIG.motion, I = CONFIG.intensity, S = CONFIG.shape;
+  for (let i = 0; i < projects.length; i++) {
+    const p = projects[i], pc = p.pc;
+    p.group.position.set(pc.position[0], pc.position[1], pc.position[2]);
+    if (p.label.textContent !== pc.label) p.label.textContent = pc.label;
+
+    // respiración lenta e irregular (ruido, no seno), con ritmo propio
+    const rate = M.flickerRate * pc.flicker;
+    p.ft += dt * rate;
+    const breath = fbm1(p.ft * 0.35 + p.seed) * 2 - 1;
+    const flick = (noise1(p.ft * 6.0 + p.seed * 3.1) - 0.5) * 0.12;
+    let k = Math.max(0.15, 1 + breath * 0.55 + flick);
+    // de vez en cuando, una descarga breve (doble pulso)
+    if (Math.random() < 0.03 * rate * dt) p.surgeAt = t;
+    const pulse = (x) => (x >= 0 ? Math.exp(-x * 16) : 0);
+    const s = t - p.surgeAt;
+    k *= 1 + 2.0 * (pulse(s) + 0.6 * pulse(s - 0.09));
+
+    // hover: el destello "despierta" en ~0,4 s con un flash
+    const target = i === hovered || i === active ? 1 : 0;
+    p.wake += (target - p.wake) * (1 - Math.exp(-dt / 0.12));
+    const flash = Math.exp(-Math.max(0, t - p.flashAt) * 7);
+    k *= 1 + 0.3 * p.wake + 0.8 * flash;
+    p.level = k;
+
+    // destello
+    const fu = p.flare.material.uniforms;
+    fu.uSize.value.setScalar(pc.size * S.flare);
+    fu.uCore.value = I.cores;
+    fu.uLevel.value = k;
+    fu.uWarm.value.set(pc.warm);
+    fu.uRays.value = clamp(Math.round(pc.rays), 1, 8);
+    fu.uRayLen.value = lerp(S.raysRest, S.raysAwake, p.wake) + 0.08 * flash;
+    fu.uRayInt.value = I.rays * (0.3 + 1.4 * p.wake + 2.0 * flash);
+    fu.uRot.value += dt * 0.02 * (i % 2 ? 1 : -1);
+
+    // filamentos
+    p.fil += dt * M.filamentSpeed * pc.speed;
+    const lu = p.filaments.material.uniforms;
+    lu.uTime.value = p.fil;
+    lu.uNerv.value = M.filamentNervous;
+    lu.uLen.value = pc.size * S.filamentLength;
+    lu.uWidth.value = I.filamentWidth * renderer.getPixelRatio() * 0.5;
+    lu.uInt.value = I.filaments;
+    lu.uLevel.value = 0.75 + 0.25 * k;
+    const nf = clamp(Math.round(pc.filaments), 0, FIL_MAX);
+    p.filaments.visible = nf > 0 && I.filaments > 0;
+    p.filaments.geometry.setDrawRange(0, nf * FIL_INDEX_PER);
+
+    // humo
+    const su = p.smoke.material.uniforms;
+    su.uSize.value.setScalar(pc.size * S.smoke);
+    su.uInt.value = CONFIG.atmosphere.projectSmoke;
+    su.uLevel.value = k;
+    p.smoke.visible = CONFIG.atmosphere.projectSmoke > 0;
+
+    // chispas
+    p.sparks.material.uniforms.uInt.value = I.sparks;
+    updateSparks(p, dt, t);
+
+    p.hit.scale.setScalar(S.hitRadius * Math.max(0.6, pc.size));
+    hazeLightCol[i].copy(U.energy.value).lerp(U.mid.value, 0.4).multiplyScalar(k);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   BRUMA AMBIENTE: láminas de humo fbm muy lentas, iluminadas por los proyectos
+   ════════════════════════════════════════════════════════════════════════ */
+const HAZE_MAX = 16;
+const hazeLightPos = projects.map((p) => p.group.position);
+const hazeLightCol = projects.map(() => new THREE.Color());
+const hazeShared = {
+  uTime: U.time,
+  uFog: U.fog,
+  uSize: { value: new THREE.Vector2(70, 70) },
+  uBase: U.bgTop,
+  uInt: { value: 1 },
+  uLightPos: { value: hazeLightPos },
+  uLightCol: { value: hazeLightCol },
+};
+const hazeSheets = [];
+for (let i = 0; i < HAZE_MAX; i++) {
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.ShaderMaterial({
+      ...additive,
+      uniforms: { ...hazeShared, uSeed: { value: i * 13.37 } },
+      vertexShader: GLSL_BILLBOARD,
+      fragmentShader: /* glsl */ `
+        #define N ${projects.length}
+        uniform vec3 uBase;
+        uniform float uInt, uTime, uFog, uSeed;
+        uniform vec3 uLightPos[N];
+        uniform vec3 uLightCol[N];
+        varying vec2 vUv;
+        varying vec3 vWorld;
+        ${GLSL_NOISE}
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float edge = smoothstep(1.0, 0.2, length(p));
+          float T = uTime * 0.012;
+          vec3 q = vWorld * 0.035 + vec3(uSeed, uSeed * 0.37, 0.0);
+          float n = fbm(q + vec3(T * 1.3, T * 0.6, -T));
+          n = smoothstep(0.32, 0.85, n);
+          vec3 light = vec3(0.0);
+          for (int i = 0; i < N; i++) {
+            float d = distance(vWorld, uLightPos[i]);
+            light += uLightCol[i] / (1.0 + d * d * 0.03);
+          }
+          float dCam = distance(vWorld, cameraPosition);
+          float near = smoothstep(3.0, 16.0, dCam);   // se aparta si la cámara la atraviesa
+          float fog = exp(-uFog * uFog * dCam * dCam * 0.6);
+          float a = n * edge * near * fog * uInt * 0.2;
+          gl_FragColor = vec4((uBase * 1.5 + light * 0.1) * a, 1.0);
+        }
+      `,
+    }),
+  );
+  const a = (i / HAZE_MAX) * Math.PI * 2 * 3.7 + rand(-0.4, 0.4);
+  const r = rand(0.15, 1) * 42;
+  m.position.set(Math.cos(a) * r, rand(-8, 10), Math.sin(a) * r);
+  m.frustumCulled = false;
+  m.renderOrder = 0;
+  scene.add(m);
+  hazeSheets.push(m);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   POSTPROCESADO: bloom por umbral (solo núcleos y filamentos), ACES,
+   viñeta, grano fino, aberración cromática muy sutil
+   ════════════════════════════════════════════════════════════════════════ */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1, 0.6, 0.6);
+composer.addPass(bloom);
+composer.addPass(new OutputPass()); // tone mapping ACES + sRGB
+
+const fxPass = new ShaderPass({
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uRes: { value: new THREE.Vector2() },
+    uVignette: { value: 0.85 },
+    uGrain: { value: 0.04 },
+    uAberration: { value: 0.005 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uTime, uVignette, uGrain, uAberration;
+    uniform vec2 uRes;
+    varying vec2 vUv;
+    float rnd(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    void main() {
+      vec2 c = vUv - 0.5;
+      float aspect = uRes.x / uRes.y;
+      float d = length(c * vec2(aspect, 1.0)) / length(vec2(aspect, 1.0) * 0.5);
+      vec2 off = c * d * d * uAberration;
+      vec3 col = vec3(
+        texture2D(tDiffuse, vUv + off).r,
+        texture2D(tDiffuse, vUv).g,
+        texture2D(tDiffuse, vUv - off).b
+      );
+      float vig = smoothstep(1.05, 0.25, d);
+      col *= mix(1.0, vig, uVignette);
+      float frame = floor(uTime * 24.0);
+      float g = rnd(floor(vUv * uRes) + vec2(frame * 37.0, frame * 17.0)) - 0.5;
+      col += g * uGrain * (0.35 + col);
+      gl_FragColor = vec4(max(col, 0.0), 1.0);
+    }
+  `,
+});
+composer.addPass(fxPass);
+
+/* Lleva CONFIG a la escena. Se ejecuta en cada fotograma: el panel cambia CONFIG y se ve al instante. */
+const titleEl = document.getElementById('titulo');
+let lastHalo = -1;
+function syncConfig() {
+  const C = CONFIG, A = C.atmosphere;
+  renderer.toneMappingExposure = C.exposure;
+  bloom.strength = C.bloom.strength;
+  bloom.radius = C.bloom.radius;
+  bloom.threshold = C.bloom.threshold;
+  fxPass.uniforms.uVignette.value = A.vignette;
+  fxPass.uniforms.uGrain.value = A.grain;
+  fxPass.uniforms.uAberration.value = A.aberration;
+  U.fog.value = A.fog;
+
+  U.energy.value.set(C.colors.energy);
+  U.mid.value.set(C.colors.energyMid);
+  U.hot.value.set(C.colors.energyHot);
+  U.bgTop.value.set(C.colors.bgTop);
+  U.bgBottom.value.set(C.colors.bgBottom);
+  U.night.value.set(C.colors.night);
+  U.fogColor.value.copy(U.bgBottom.value).lerp(U.bgTop.value, 0.4);
+  skyMat.uniforms.uNightGlow.value = C.sky.nightGlow;
+
+  dustGeo.setDrawRange(0, clamp(Math.round(C.dust.count), 0, DUST_MAX));
+  dustMat.uniforms.uSize.value = C.dust.size;
+  dustMat.uniforms.uOpacity.value = C.dust.brightness;
+  dustMat.uniforms.uStretch.value = C.dust.stretch;
+  stoneMat.uniforms.uRim.value = C.stones.rim;
+
+  const nh = clamp(Math.round(A.smokeAmount), 0, HAZE_MAX);
+  hazeSheets.forEach((m, i) => { m.visible = i < nh && A.smokeIntensity > 0; });
+  hazeShared.uInt.value = A.smokeIntensity;
+
+  controls.autoRotateSpeed = C.motion.autoRotateSpeed;
+  controls.dampingFactor = C.motion.damping;
+
+  if (C.intensity.titleHalo !== lastHalo) {
+    lastHalo = C.intensity.titleHalo;
+    titleEl.style.setProperty('--halo', String(lastHalo));
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   INTERACCIÓN: hover, clic (≠ arrastre), viajes de cámara, WASD
+   ════════════════════════════════════════════════════════════════════════ */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let downX = 0, downY = 0, pointerIsDown = false;
+const clock = new THREE.Clock();
+
+function pick(clientX, clientY) {
+  ndc.set((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(hitTargets, false)[0];
+  return hit ? hit.object.userData.projectIndex : -1;
+}
+function setHovered(i) {
+  if (i === hovered) return;
+  hovered = i;
+  if (i >= 0) projects[i].flashAt = clock.elapsedTime; // el flash que despierta
+  canvas.classList.toggle('sobre-luz', i >= 0);
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  pointerIsDown = true;
+  downX = e.clientX;
+  downY = e.clientY;
+  stopAutoRotate();
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (pointerIsDown || e.pointerType === 'touch' || travel.active) return;
+  setHovered(pick(e.clientX, e.clientY));
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (!pointerIsDown) return;
+  pointerIsDown = false;
+  // si el puntero se ha movido más de 4 px, era un arrastre, no un clic
+  if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) return;
+  const i = pick(e.clientX, e.clientY);
+  if (i >= 0) goToProject(i);
+});
+canvas.addEventListener('pointercancel', () => { pointerIsDown = false; });
+canvas.addEventListener('pointerleave', () => { if (!pointerIsDown) setHovered(-1); });
+
+titleEl.addEventListener('click', () => {
+  active = -1;
+  travelTo(HOME_POS, HOME_TARGET, CONFIG.camera.homeSeconds);
+});
+
+// Viaje suave (interpolación con arco leve), sin cortes
+const travel = {
+  active: false, t0: 0, dur: 1, arc: 0, onDone: null,
+  fromPos: new THREE.Vector3(), toPos: new THREE.Vector3(),
+  fromTarget: new THREE.Vector3(), toTarget: new THREE.Vector3(),
+};
+function travelTo(pos, target, seconds, onDone = null) {
+  stopAutoRotate();
+  travel.active = true;
+  travel.t0 = performance.now() / 1000;
+  travel.dur = seconds;
+  travel.onDone = onDone;
+  travel.fromPos.copy(camera.position);
+  travel.toPos.copy(pos);
+  travel.fromTarget.copy(controls.target);
+  travel.toTarget.copy(target);
+  travel.arc = Math.min(5, travel.fromPos.distanceTo(travel.toPos) * 0.1);
+  controls.enabled = false;
+}
+function updateTravel(now) {
+  if (!travel.active) return;
+  const k = clamp((now - travel.t0) / travel.dur, 0, 1);
+  const e = smoother(k);
+  const eTarget = smoother(clamp(k * 1.25, 0, 1)); // la mirada se adelanta un poco
+  camera.position.lerpVectors(travel.fromPos, travel.toPos, e);
+  camera.position.y += Math.sin(Math.PI * e) * travel.arc;
+  controls.target.lerpVectors(travel.fromTarget, travel.toTarget, eTarget);
+  camera.lookAt(controls.target);
+  if (k >= 1) {
+    travel.active = false;
+    controls.enabled = true;
+    controls.update();
+    const done = travel.onDone;
+    travel.onDone = null;
+    done?.();
+  }
+}
+function goToProject(i) {
+  const p = projects[i];
+  active = i;
+  const lightPos = p.group.position.clone();
+  const dir = camera.position.clone().sub(lightPos);
+  if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+  dir.normalize();
+  const to = lightPos.clone().addScaledVector(dir, CONFIG.camera.travelDistance * Math.max(0.7, p.pc.size));
+  travelTo(to, lightPos, CONFIG.camera.travelSeconds, () => onProjectOpen(p.pc.id));
+}
+
+// WASD para volar, Q/E bajar/subir, Mayús más rápido (no mientras se escribe en el panel)
+const keys = new Set();
+const typing = (e) => e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable]');
+window.addEventListener('keydown', (e) => {
+  if (typing(e)) return;
+  const k = e.key.toLowerCase();
+  if (k.length === 1 && 'wasdqe'.includes(k)) { keys.add(k); stopAutoRotate(); }
+  if (e.key === 'Shift') keys.add('shift');
+});
+window.addEventListener('keyup', (e) => {
+  keys.delete(e.key.toLowerCase());
+  if (e.key === 'Shift') keys.delete('shift');
+});
+window.addEventListener('blur', () => keys.clear());
+const _fwd = new THREE.Vector3(), _right = new THREE.Vector3(), _move = new THREE.Vector3();
+function updateFly(dt) {
+  if (!keys.size || travel.active) return;
+  camera.getWorldDirection(_fwd);
+  _right.crossVectors(_fwd, camera.up).normalize();
+  _move.set(0, 0, 0);
+  if (keys.has('w')) _move.add(_fwd);
+  if (keys.has('s')) _move.sub(_fwd);
+  if (keys.has('d')) _move.add(_right);
+  if (keys.has('a')) _move.sub(_right);
+  if (keys.has('e')) _move.y += 1;
+  if (keys.has('q')) _move.y -= 1;
+  if (!_move.lengthSq()) return;
+  _move.normalize().multiplyScalar(CONFIG.motion.flySpeed * (keys.has('shift') ? 3 : 1) * dt);
+  camera.position.add(_move);
+  controls.target.add(_move);
+}
+
+// Etiquetas HTML proyectadas sobre el 3D
+const _proj = new THREE.Vector3();
+const _camSpace = new THREE.Vector3();
+function toScreen(worldPos) {
+  _camSpace.copy(worldPos).applyMatrix4(camera.matrixWorldInverse);
+  if (_camSpace.z > -0.1) return null; // detrás de la cámara
+  _proj.copy(worldPos).project(camera);
+  return { x: (_proj.x * 0.5 + 0.5) * window.innerWidth, y: (-_proj.y * 0.5 + 0.5) * window.innerHeight, depth: -_camSpace.z };
+}
+const ORIGIN = new THREE.Vector3();
+function updateLabels() {
+  const s = toScreen(ORIGIN);
+  if (s) {
+    const fade = 1 - smoothstep(55, 120, s.depth);
+    titleEl.style.opacity = fade.toFixed(3);
+    titleEl.style.visibility = fade > 0.01 ? 'visible' : 'hidden';
+    titleEl.style.transform = `translate3d(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+  } else {
+    titleEl.style.visibility = 'hidden';
+  }
+  for (let i = 0; i < projects.length; i++) {
+    const p = projects[i];
+    const ps = toScreen(p.group.position);
+    const show = !!ps && (i === hovered || i === active);
+    p.label.classList.toggle('visible', show);
+    if (ps) p.label.style.transform = `translate3d(${(ps.x + 22).toFixed(1)}px, ${(ps.y + 18).toFixed(1)}px, 0)`;
+  }
+}
+
+// Línea de ayuda que se desvanece
+const help = document.getElementById('ayuda');
+if (isTouch) help.textContent = 'ARRASTRAR · ORBITAR / PELLIZCAR · ACERCAR / TOCAR UNA LUZ · VIAJAR';
+setTimeout(() => help.classList.add('oculta'), CONFIG.ui.hintSeconds * 1000);
+
+// Tamaño de ventana
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_RATIO_MAX));
+  renderer.setSize(w, h);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(w, h);
+  bloom.resolution.set(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  const buf = renderer.getDrawingBufferSize(new THREE.Vector2());
+  fxPass.uniforms.uRes.value.copy(buf);
+  U.res.value.copy(buf);
+  U.pxScale.value = (buf.y * 0.5) / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ════════════════════════════════════════════════════════════════════════
+   AJUSTES: panel lil-gui (cambios en vivo, guardado automático en localStorage)
+   ════════════════════════════════════════════════════════════════════════ */
+const panel = document.getElementById('panel');
+const panelBtn = document.getElementById('ajustes-btn');
+const pegar = document.getElementById('pegar');
+const pegarText = pegar.querySelector('textarea');
+const aviso = document.getElementById('aviso');
+
+panelBtn.addEventListener('click', () => {
+  const open = panel.hidden;
+  panel.hidden = !open;
+  panelBtn.setAttribute('aria-expanded', String(open));
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !panel.hidden) { panel.hidden = true; panelBtn.setAttribute('aria-expanded', 'false'); }
+});
+
+let avisoTimer = 0;
+function avisar(texto) {
+  aviso.textContent = texto;
+  aviso.classList.add('visible');
+  clearTimeout(avisoTimer);
+  avisoTimer = setTimeout(() => aviso.classList.remove('visible'), 1600);
+}
+let saveTimer = 0;
+function guardar() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(CONFIG)); } catch {}
+  }, 250);
+}
+
+const gui = new GUI({ container: document.getElementById('panel-gui'), title: 'AJUSTES' });
+function refrescarPanel() {
+  gui.controllersRecursive().forEach((c) => c.updateDisplay());
+  projectFolders.forEach((f, i) => f.title(CONFIG.projects[i].label));
+}
+
+const fColor = gui.addFolder('COLORES E INTENSIDAD');
+fColor.addColor(CONFIG.colors, 'bgTop').name('fondo arriba');
+fColor.addColor(CONFIG.colors, 'bgBottom').name('fondo abajo');
+fColor.addColor(CONFIG.colors, 'night').name('azul noche');
+fColor.add(CONFIG.sky, 'nightGlow', 0, 2, 0.01).name('zona azul noche');
+fColor.addColor(CONFIG.colors, 'energy').name('energía');
+fColor.addColor(CONFIG.colors, 'energyMid').name('energía clara');
+fColor.addColor(CONFIG.colors, 'energyHot').name('energía blanca');
+fColor.addColor(CONFIG.colors, 'warm').name('acento cálido').onChange((v) => {
+  CONFIG.projects.forEach((p) => { p.warm = v; });
+  refrescarPanel();
+});
+fColor.add(CONFIG, 'exposure', 0.1, 2.5, 0.01).name('exposición');
+fColor.add(CONFIG.bloom, 'strength', 0, 3, 0.01).name('bloom fuerza');
+fColor.add(CONFIG.bloom, 'radius', 0, 1, 0.01).name('bloom radio');
+fColor.add(CONFIG.bloom, 'threshold', 0, 2, 0.01).name('bloom umbral');
+fColor.add(CONFIG.intensity, 'cores', 0, 4, 0.01).name('núcleos');
+fColor.add(CONFIG.intensity, 'filaments', 0, 4, 0.01).name('filamentos');
+fColor.add(CONFIG.intensity, 'filamentWidth', 0.5, 6, 0.1).name('grosor filamentos');
+fColor.add(CONFIG.intensity, 'rays', 0, 3, 0.01).name('destellos');
+fColor.add(CONFIG.intensity, 'sparks', 0, 3, 0.01).name('chispas');
+fColor.add(CONFIG.intensity, 'titleHalo', 0, 1, 0.01).name('halo del título');
+
+const fAtm = gui.addFolder('ATMÓSFERA');
+fAtm.add(CONFIG.atmosphere, 'fog', 0, 0.08, 0.001).name('niebla');
+fAtm.add(CONFIG.atmosphere, 'smokeAmount', 0, HAZE_MAX, 1).name('humo cantidad');
+fAtm.add(CONFIG.atmosphere, 'smokeIntensity', 0, 3, 0.01).name('humo intensidad');
+fAtm.add(CONFIG.atmosphere, 'projectSmoke', 0, 3, 0.01).name('humo proyectos');
+fAtm.add(CONFIG.dust, 'count', 0, DUST_MAX, 100).name('polvo cantidad');
+fAtm.add(CONFIG.dust, 'size', 0.005, 0.12, 0.001).name('polvo tamaño');
+fAtm.add(CONFIG.dust, 'brightness', 0, 2, 0.01).name('polvo brillo');
+fAtm.add(CONFIG.dust, 'stretch', 0, 0.3, 0.005).name('polvo estela');
+fAtm.add(CONFIG.stones, 'enabled').name('piedras');
+fAtm.add(CONFIG.stones, 'rim', 0, 3, 0.01).name('piedras borde');
+fAtm.add(CONFIG.atmosphere, 'grain', 0, 0.2, 0.001).name('grano');
+fAtm.add(CONFIG.atmosphere, 'vignette', 0, 1, 0.01).name('viñeta');
+fAtm.add(CONFIG.atmosphere, 'aberration', 0, 0.05, 0.0005).name('aberración');
+
+const fMov = gui.addFolder('MOVIMIENTO');
+fMov.add(CONFIG.motion, 'autoRotate').name('giro automático').onChange((v) => { controls.autoRotate = v; });
+fMov.add(CONFIG.motion, 'autoRotateSpeed', -2, 2, 0.01).name('velocidad de giro');
+fMov.add(CONFIG.motion, 'flySpeed', 1, 60, 0.5).name('velocidad de vuelo');
+fMov.add(CONFIG.motion, 'damping', 0.01, 0.3, 0.005).name('suavidad cámara');
+fMov.add(CONFIG.motion, 'filamentSpeed', 0, 4, 0.01).name('filamentos velocidad');
+fMov.add(CONFIG.motion, 'filamentNervous', 0, 2, 0.01).name('filamentos nervio');
+fMov.add(CONFIG.motion, 'flickerRate', 0, 4, 0.01).name('ritmo de parpadeo');
+fMov.add(CONFIG.motion, 'sparkRate', 0, 40, 0.5).name('frecuencia chispas');
+
+const fProj = gui.addFolder('PROYECTOS');
+const projectFolders = CONFIG.projects.map((pc) => {
+  const f = fProj.addFolder(pc.label);
+  f.add(pc, 'label').name('nombre').onChange((v) => f.title(v));
+  f.add(pc.position, '0', -80, 80, 0.1).name('x');
+  f.add(pc.position, '1', -80, 80, 0.1).name('y');
+  f.add(pc.position, '2', -80, 80, 0.1).name('z');
+  f.add(pc, 'filaments', 0, FIL_MAX, 1).name('filamentos');
+  f.add(pc, 'size', 0.2, 3, 0.01).name('tamaño');
+  f.addColor(pc, 'warm').name('acento');
+  f.add(pc, 'speed', 0, 4, 0.01).name('velocidad');
+  f.add(pc, 'flicker', 0, 4, 0.01).name('parpadeo');
+  f.add(pc, 'rays', 1, 8, 1).name('rayos');
+  f.close();
+  return f;
+});
+
+const fSave = gui.addFolder('GUARDAR');
+fSave.add({
+  copiar: async () => {
+    const json = JSON.stringify(CONFIG, null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = json;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    avisar('COPIADO');
+  },
+}, 'copiar').name('Copiar ajustes');
+fSave.add({
+  pegar: () => {
+    pegar.hidden = false;
+    pegarText.value = '';
+    pegarText.focus();
+  },
+}, 'pegar').name('Pegar ajustes');
+fSave.add({
+  restablecer: () => {
+    deepAssign(CONFIG, structuredClone(DEFAULTS));
+    controls.autoRotate = CONFIG.motion.autoRotate;
+    refrescarPanel();
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    avisar('RESTABLECIDO');
+  },
+}, 'restablecer').name('Restablecer');
+
+pegar.querySelector('[data-aplicar]').addEventListener('click', () => {
+  try {
+    const obj = JSON.parse(pegarText.value);
+    deepAssign(CONFIG, obj);
+    controls.autoRotate = CONFIG.motion.autoRotate;
+    refrescarPanel();
+    guardar();
+    pegar.hidden = true;
+    avisar('APLICADO');
+  } catch {
+    avisar('JSON NO VÁLIDO');
+  }
+});
+pegar.querySelector('[data-cancelar]').addEventListener('click', () => { pegar.hidden = true; });
+
+gui.onChange(guardar);
+fProj.close();
+fSave.close();
+
+/* ════════════════════════════════════════════════════════════════════════
+   BUCLE
+   ════════════════════════════════════════════════════════════════════════ */
+const prevCam = camera.position.clone();
+const _v = new THREE.Vector3();
+let first = true;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  const now = performance.now() / 1000;
+
+  syncConfig();
+  U.time.value = t;
+  fxPass.uniforms.uTime.value = t;
+
+  updateFly(dt);
+  updateTravel(now);
+  if (!travel.active) controls.update();
+
+  // velocidad de cámara (suavizada) para la estela del polvo
+  if (dt > 0) {
+    _v.copy(camera.position).sub(prevCam).divideScalar(dt);
+    camVel.lerp(_v, 1 - Math.exp(-dt * 8));
+  }
+  prevCam.copy(camera.position);
+
+  sky.position.copy(camera.position); // el cielo viaja con la cámara: nunca hay borde
+  updateStones(dt);
+  updateProjects(t, dt);
+
+  composer.render();
+  updateLabels();
+
+  if (first) {
+    first = false;
+    requestAnimationFrame(() => document.getElementById('fundido').classList.add('fuera'));
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

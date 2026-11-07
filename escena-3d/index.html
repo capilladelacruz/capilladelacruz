@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CAPILLADELACRUZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#05030a;color:#d6dcff;font-family:'JetBrains Mono',ui-monospace,monospace;overscroll-behavior:none}
+  canvas{display:block;outline:none;touch-action:none}
+  #title{position:fixed;bottom:22px;font:inherit;font-size:14px;letter-spacing:.62em;padding:6px 0 6px .62em;margin:0;color:#fff;white-space:nowrap;
+         background:none;border:0;cursor:pointer;text-shadow:0 0 12px rgba(190,170,255,.7);mix-blend-mode:screen;z-index:3;-webkit-tap-highlight-color:transparent}
+  #title:focus-visible{outline:1px solid rgba(255,255,255,.35);outline-offset:4px}
+  .lbl{position:fixed;left:0;top:0;font-size:9px;letter-spacing:.2em;color:#e6e8ff;white-space:nowrap;pointer-events:none;opacity:.7;will-change:transform,opacity}
+  .lbl i{font-style:normal;color:#ffb070}
+  .lbl .co{display:block;margin-top:6px;color:#ffb070;font-size:.85em;letter-spacing:.14em;opacity:0;transition:opacity .35s}
+  .lbl.hv .co{opacity:.9}
+  #ui{position:fixed;top:14px;right:14px;display:flex;gap:6px;z-index:6}
+  #ui button,#paste button{font:inherit;font-size:10px;letter-spacing:.2em;color:#a99bd0;border:1px solid rgba(169,155,208,.25);padding:6px 10px;border-radius:2px;background:rgba(5,3,10,.45);cursor:pointer}
+  #ui button:hover,#ui button.on,#paste button:hover{color:#fff;border-color:rgba(255,255,255,.8)}
+  #guiWrap{position:fixed;top:48px;right:14px;width:min(320px,calc(100vw - 28px));max-height:calc(100vh - 62px);overflow-y:auto;overflow-x:hidden;z-index:5;display:none;
+           scrollbar-width:thin;scrollbar-color:#2e2948 transparent;overscroll-behavior:contain}
+  #guiWrap.on{display:block}
+  #guiWrap .lil-gui{--background-color:rgba(8,6,14,.94);--widget-color:#16131f;--hover-color:#221e33;--focus-color:#2c2742;--number-color:#ffb070;--string-color:#cfd4ff;
+           --text-color:#bfc2df;--title-background-color:#0c0a14;--title-text-color:#eceaff;--font-family:'JetBrains Mono',ui-monospace,monospace;--font-family-mono:'JetBrains Mono',monospace;
+           --font-size:10px;--input-font-size:10px;--padding:5px;--spacing:4px;--widget-height:19px;--title-height:24px;--name-width:47%;--folder-indent:6px;--widget-border-radius:1px}
+  #guiWrap .lil-gui.root{width:100%!important;border:1px solid rgba(255,255,255,.07)}
+  #guiWrap .lil-gui .title{letter-spacing:.12em}
+  body.clean #ui,body.clean #guiWrap{display:none!important}
+  #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);font-size:10px;letter-spacing:.2em;color:#fff;background:rgba(8,6,14,.92);border:1px solid rgba(255,255,255,.18);
+         padding:8px 14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:12;white-space:nowrap}
+  #toast.on{opacity:1}
+  #paste{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,1,6,.6);z-index:11}
+  #paste.on{display:flex}
+  #paste .box{width:min(560px,calc(100vw - 32px));background:#0b0912;border:1px solid rgba(255,255,255,.15);padding:14px;box-sizing:border-box}
+  #paste p{margin:0 0 10px;font-size:10px;letter-spacing:.2em;color:#a99bd0}
+  #paste textarea{width:100%;height:260px;box-sizing:border-box;background:#05030a;color:#cfd4ff;border:1px solid rgba(255,255,255,.12);font:11px 'JetBrains Mono',monospace;padding:8px;resize:vertical}
+  #paste .row{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "lil-gui":"https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm"
+}}
+</script>
+</head>
+<body>
+
+<button id="title" type="button" title="Vista general">CAPILLADELACRUZ</button>
+<div id="labels"></div>
+<div id="ui"><button id="btnIntro" type="button">REPETIR INTRO</button><button id="btnGui" type="button">AJUSTES</button></div>
+<div id="guiWrap"></div>
+<div id="toast"></div>
+<div id="paste"><div class="box"><p>PEGAR AJUSTES (JSON)</p><textarea id="pasteTa" spellcheck="false"></textarea>
+  <div class="row"><button id="pasteCancel" type="button">CANCELAR</button><button id="pasteOk" type="button">APLICAR</button></div></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import GUI from 'lil-gui';
+
+/* =====================================================================
+   CONFIG — todo lo ajustable vive aquí; el panel lee y escribe en este objeto.
+   Unidades: "u" = unidades del mundo 3D (la esfera mide 16 u de radio).
+   Ángulos en grados · velocidades de giro en grados/segundo.
+   ===================================================================== */
+const layer=(o={})=>Object.assign({on:true,color:'#ffffff',intensity:1,size:10,length:1,thickness:1,rotation:0,rotSpeed:0},o);
+const flareDef=(o={})=>({
+  core:layer(o.core), glow:layer(o.glow),
+  rays:layer({count:22,lenRand:.64,angRand:1,widthMin:.37,widthMax:2.2,tipSoft:1,seed:7,...o.rays}),
+  anam:layer({lines:1,height:6,fade:1,...o.anam}),
+  cross:layer({lenH:75,lenV:85,...o.cross}),
+  star:layer({points:6,...o.star}),
+  halo:layer({chroma:.03,...o.halo}),
+  ghosts:layer({count:5,spacing:.42,chroma:.25,...o.ghosts}),
+  chroma:o.chroma ?? .015,
+  behavior:{flicker:'ninguno',flickerSpeed:1,flickerAmp:.1,hoverGrow:.3,hoverStretch:.5,hoverDur:.35,occlusion:true,occStrength:1,maxScale:3,...o.behavior},
+});
+
+const CONFIG={
+  flares:{
+    center:flareDef({
+      core:{on:true,color:'#ffffff',intensity:.9,size:14},
+      glow:{color:'#d8c8ff',intensity:.45,size:62},
+      rays:{on:false,color:'#f2dcff',intensity:1.18,size:323.2,length:1.3833,thickness:1.1074,widthMin:.98,rotSpeed:.57},
+      anam:{on:false,color:'#f0e8ff',intensity:.32,size:1,length:300,thickness:.62},
+      cross:{on:false,color:'#f4f0ff',intensity:.4,size:1,length:.67,lenH:220,lenV:160,thickness:.5},
+      star:{on:false,color:'#e8e0ff',intensity:.35,size:150,thickness:.35,points:6},
+      halo:{on:false,color:'#cbb8ff',intensity:.25,size:64,thickness:1.2},
+      ghosts:{on:false,color:'#b9a8ff',intensity:1.61,size:.07,thickness:.5},
+      chroma:.015,
+      behavior:{flicker:'respiración',flickerSpeed:.7,flickerAmp:.13,hoverGrow:.12,hoverStretch:.3,hoverDur:.6,maxScale:4},
+    }),
+    projectsMode:'todos',          // 'todos' (mismos ajustes) | 'individual'
+    projectsEdit:'01',
+    projects:flareDef({
+      core:{color:'#f4f0ff',intensity:.95,size:6},
+      glow:{color:'#8e7dff',intensity:.22,size:34},
+      rays:{on:false,color:'#eae6ff',intensity:.35,size:40,count:14,widthMin:.08,widthMax:.35},
+      anam:{on:false,color:'#eae6ff',intensity:.3,size:1,length:90,thickness:.3},
+      cross:{color:'#eae6ff',intensity:.72,size:1,lenH:75,lenV:85,thickness:.31},
+      star:{on:false,color:'#eae6ff',intensity:.4,size:22,thickness:.3,points:4},
+      halo:{on:false,color:'#b9a8ff',intensity:.3,size:14,thickness:.35},
+      ghosts:{on:false,color:'#b9a8ff',intensity:.12,size:.03,thickness:.4},
+      chroma:.01,
+      behavior:{flicker:'ninguno',flickerSpeed:1.2,flickerAmp:.1,hoverGrow:.45,hoverStretch:.7,hoverDur:.35,maxScale:3},
+    }),
+    perProject:[],                 // se rellena abajo (una copia por proyecto)
+  },
+  sphere:{
+    radius:10.5, spin:-13.07, color:'#ced4ff', opacity:1,
+    veins:{intensity:.91,scale:2.07,speed:.12,octaves:4},
+    fresnel:{intensity:1.96,power:1.86},
+    grid:{lon:16,lat:12,opacity:.12},
+    nodes:{count:545,dist:3.4,links:2,density:.55,opacity:.35,points:0},
+    scan:{on:true,speed:1.34,width:.059,intensity:.53,color:'#f3edff'},
+    hot:{count:7,color:'#ff9a4a',pulse:.5,size:2.4},
+    brackets:{on:true,ticks:true,opacity:1,spin:-1.15},
+  },
+  orbits:{
+    rings:[ // inclinaciones y fase inicial calculadas para reproducir el encuadre del boceto
+      {radius:116.2,tiltX:48.77, tiltZ:-16.03, phase:-45.92,spin:1.1, speed:1.6, opacity:.42,gaps:3,wear:.45,double:true,ticks:false,tickDensity:3},
+      {radius:116.1,tiltX:-67.41,tiltZ:-151.32,phase:-42.26,spin:-.7, speed:1.2, opacity:.42,gaps:3,wear:.45,double:true,ticks:true, tickDensity:3},
+      {radius:108.3,tiltX:-25.35,tiltZ:90,     phase:103.89,spin:.9,  speed:-1.4,opacity:.42,gaps:3,wear:.45,double:true,ticks:false,tickDensity:3},
+      {radius:124.5,tiltX:45.51, tiltZ:111.82, phase:77.08, spin:-1.2,speed:1.0, opacity:.42,gaps:3,wear:.45,double:true,ticks:true, tickDensity:3},
+      {radius:127.4,tiltX:9.76,  tiltZ:-98.33, phase:-72.92,spin:.6,  speed:-.9, opacity:.42,gaps:3,wear:.45,double:true,ticks:false,tickDensity:3},
+    ],
+    systemSpinOn:false, systemSpin:.04, color:'#b4b6e6', markers:true, markerSpeed:1.06,
+    amber:{on:true,dashed:true,opacity:.35,color:'#ff9a4a'},
+  },
+  projects:{
+    list:[{name:'PROYECTO'},{name:'PROYECTO'},{name:'PROYECTO'},{name:'PROYECTO'},{name:'PROYECTO'}],
+    labels:'siempre', labelSize:7, labelOpacity:.23, dimOthers:.45, hoverBoost:.37, ringGlow:2.5, amberDot:true,
+  },
+  bg:{base:'#211d35',c1:'#61306c',c2:'#ad5076',c3:'#edaaa0',dirAz:-139.4,dirEl:-18,width:1,amount:.85,scale:1.5,dust:1,stars:.35,starBright:0,drift:.004},
+  film:{grain:.044,grainSize:.9,grainSpeed:24,blotches:.75,blotchScale:2.2,blotchContrast:1,blotchSpeed:.05,dust:.6,
+        vignette:1.45,vignetteIrr:.55,dirt:1,halation:1,halationColor:'#ffc4cb',ca:.02},
+  trails:{count:16,color:'#ffd7a0',speed:1.09,length:.1},
+  dust:{count:700,size:1,bright:1},
+  camera:{fov:40,roll:-6.9,autoRotate:true,autoSpeed:.18,damping:.05,minDist:20,maxDist:1600,introDur:6,travelDur:2.2,home:[230,135,185]},
+  post:{exposure:.3,bloomStrength:.79,bloomRadius:.75,bloomThreshold:.69,toneMapping:'ACES'},
+  text:{position:'abajo-derecha',size:14,spacing:.62,opacity:1,glow:.7},
+};
+
+/* ======== utilidades ======== */
+const DEG=Math.PI/180;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const seeded=s=>{ let a=(Math.floor(s*2654435761)>>>0)||1; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; };
+const hash1=x=>{ const s=Math.sin(x*127.1+311.7)*43758.5453; return s-Math.floor(s); };
+const vnoise=x=>{ const i=Math.floor(x), f=x-i, u=f*f*(3-2*f); return hash1(i)*(1-u)+hash1(i+1)*u; };
+const smoothstep=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+const clamp01=x=>Math.min(1,Math.max(0,x));
+const easeIO=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const randDir=(r)=>{ const z=r()*2-1, th=r()*Math.PI*2, s=Math.sqrt(1-z*z); return new THREE.Vector3(Math.cos(th)*s,z,Math.sin(th)*s); };
+function noise1(x,seed){ return Math.sin(x*3.1+seed)*.5+Math.sin(x*7.7+seed*2.3)*.3+Math.sin(x*17.3+seed*5.1)*.2; }
+// copia valores de src en target sin romper las referencias (el panel sigue enlazado)
+function deepAssign(target,src){
+  if(!src||typeof src!=='object') return;
+  for(const k of Object.keys(src)){
+    if(!(k in target)) continue;
+    const sv=src[k], tv=target[k];
+    if(Array.isArray(tv)&&Array.isArray(sv)){ sv.forEach((v,i)=>{ if(i>=tv.length) return; if(tv[i]&&typeof tv[i]==='object') deepAssign(tv[i],v); else if(typeof v===typeof tv[i]) tv[i]=v; }); }
+    else if(tv&&typeof tv==='object'){ deepAssign(tv,sv); }
+    else if(typeof sv===typeof tv){ target[k]=sv; }
+  }
+}
+CONFIG.flares.perProject=[0,1,2,3,4].map(i=>{ const d=clone(CONFIG.flares.projects); const r=seeded(31+i*17); d.cross.lenH=Math.round(60+r()*30); d.cross.lenV=Math.round(70+r()*30); return d; });
+const DEFAULTS=clone(CONFIG);
+function onProjectOpen(id){ /* vacío a propósito: aquí se abrirá el proyecto */ }
+window.onProjectOpen=onProjectOpen;
+
+/* ======== renderer / escena / cámara ======== */
+let W=innerWidth, H=innerHeight;
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(W,H);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=CONFIG.post.exposure;
+document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(CONFIG.camera.fov,W/H,.1,8000);
+const HOME=new THREE.Vector3().fromArray(CONFIG.camera.home);
+camera.position.copy(HOME);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.autoRotate=true; controls.autoRotateSpeed=.18;
+let autoPaused=false; controls.addEventListener('start',()=>{ autoPaused=true; });
+
+/* ======== NEBULOSA pintada (shader en esfera) ======== */
+const sky=new THREE.Mesh(new THREE.SphereGeometry(6000,96,48),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,
+ uniforms:{uOff:{value:0},uBase:{value:new THREE.Color()},uC1:{value:new THREE.Color()},uC2:{value:new THREE.Color()},uC3:{value:new THREE.Color()},
+   uDust:{value:1},uNeb:{value:.85},uReg:{value:new THREE.Vector3()},uRW:{value:1},uScale:{value:1.5},uStarThr:{value:.9993},uStarB:{value:1}},
+ vertexShader:`varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+ fragmentShader:`
+  uniform float uOff,uDust,uNeb,uRW,uScale,uStarThr,uStarB; uniform vec3 uBase,uC1,uC2,uC3,uReg; varying vec3 vD;
+  float h(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
+  float n(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+    return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+  float fbm(vec3 p){ float v=0.,a=.5; for(int i=0;i<6;i++){ v+=a*n(p); p=p*2.03+vec3(1.7,9.2,3.1); a*=.5;} return v;}
+  void main(){
+    vec3 d=normalize(vD); vec3 p=d*uScale+vec3(0.,0.,uOff);
+    vec3 q=vec3(fbm(p),fbm(p+vec3(5.2,1.3,2.8)),fbm(p+vec3(1.3,7.1,4.4)));
+    float f=fbm(p+2.2*q);
+    float reg=exp(-pow(acos(clamp(dot(d,uReg),-1.,1.))/uRW,2.)*1.6);
+    float em=smoothstep(.38,.95,f)*reg*uNeb;
+    vec3 col=uBase*(1.+.6*(d.y*.5+.5));
+    col=mix(col,uC1,smoothstep(.0,.35,em)*.9);
+    col=mix(col,uC2,smoothstep(.25,.75,em)*.85);
+    col+=uC3*pow(smoothstep(.55,1.,em),2.)*.55;
+    float du=fbm(d*3.2+q*1.4);
+    col*=1.-uDust*smoothstep(.48,.72,du)*reg*.85;
+    vec3 g=floor(d*420.); float s=h(g); float st=step(uStarThr,s)*(.25+.4*h(g+1.))*uStarB;
+    col+=mix(vec3(.8,.85,1.),vec3(1.,.8,.9),h(g+2.))*st*(.5+reg*.8);
+    gl_FragColor=vec4(col,1.);
+  }`}));
+sky.renderOrder=-2; scene.add(sky);
+
+/* ======== polvo cercano (se envuelve alrededor de la cámara: infinito) ======== */
+const dustMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uCam:{value:new THREE.Vector3()},uBox:{value:700},uPR:{value:renderer.getPixelRatio()},uSize:{value:1},uBright:{value:1}},
+  vertexShader:`uniform vec3 uCam; uniform float uBox,uPR,uSize,uBright; attribute float seed; varying float vA;
+    void main(){ vec3 p=mod(position-uCam+uBox*.5,uBox)-uBox*.5+uCam; vec4 mv=modelViewMatrix*vec4(p,1.);
+      vA=(1.-smoothstep(uBox*.25,uBox*.5,length(p-uCam)))*(.15+.6*seed)*uBright; gl_PointSize=clamp((.5+seed)*uPR*160.*uSize/-mv.z,1.,4.*uPR*uSize); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`varying float vA; void main(){ float d=length(gl_PointCoord-.5); gl_FragColor=vec4(.85,.82,1.,smoothstep(.5,0.,d)*vA); }`});
+let dustPts=null;
+function buildDust(N){
+  if(dustPts){ scene.remove(dustPts); dustPts.geometry.dispose(); }
+  const r=seeded(99), BOX=700, g=new THREE.BufferGeometry(), p=new Float32Array(N*3), s=new Float32Array(N);
+  for(let i=0;i<N;i++){ p[i*3]=(r()-.5)*BOX; p[i*3+1]=(r()-.5)*BOX; p[i*3+2]=(r()-.5)*BOX; s[i]=r(); }
+  g.setAttribute('position',new THREE.BufferAttribute(p,3)); g.setAttribute('seed',new THREE.BufferAttribute(s,1));
+  dustPts=new THREE.Points(g,dustMat); dustPts.frustumCulled=false; scene.add(dustPts);
+}
+
+/* ======== líneas imperfectas (alfa por vértice: huecos, desgaste) ======== */
+const fadeLineMat=(color,op)=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uC:{value:new THREE.Color(color)},uO:{value:op},uDraw:{value:1}},
+  vertexShader:`attribute float a; attribute float u; varying float vA; varying float vU; void main(){ vA=a; vU=u; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform vec3 uC; uniform float uO,uDraw; varying float vA; varying float vU; void main(){ if(vU>uDraw) discard; gl_FragColor=vec4(uC,vA*uO); }`});
+function lineGeo(pts,alphaFn){ const g=new THREE.BufferGeometry().setFromPoints(pts); const a=new Float32Array(pts.length),u=new Float32Array(pts.length);
+  pts.forEach((_,i)=>{ u[i]=i/(pts.length-1); a[i]=alphaFn(u[i],i); }); g.setAttribute('a',new THREE.BufferAttribute(a,1)); g.setAttribute('u',new THREE.BufferAttribute(u,1)); return g; }
+function segGeo(arr,al,uu){ const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3)); g.setAttribute('a',new THREE.Float32BufferAttribute(al,1)); g.setAttribute('u',new THREE.Float32BufferAttribute(uu,1)); return g; }
+function circle(r,seg){ const p=[]; for(let i=0;i<=seg;i++){ const a=i/seg*Math.PI*2; p.push(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r)); } return new THREE.BufferGeometry().setFromPoints(p); }
+function disposeChildren(g){ g.children.slice().forEach(o=>{ g.remove(o); o.geometry?.dispose(); o.material?.dispose(); }); }
+
+/* ======== texturas de luz ======== */
+function radial(stops){ const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); const r=g.createRadialGradient(128,128,0,128,128,128);
+  stops.forEach(([o,a])=>r.addColorStop(o,`rgba(255,255,255,${a})`)); g.fillStyle=r; g.fillRect(0,0,256,256); return new THREE.CanvasTexture(c); }
+const texCore=radial([[0,1],[.07,.95],[.18,.3],[.45,.07],[1,0]]);
+const spr=(tex,color,s,op=1)=>{ const m=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color,transparent:true,opacity:op,depthWrite:false,blending:THREE.AdditiveBlending})); m.scale.set(s,s,1); return m; };
+
+/* ======== ESFERA TECNOLÓGICA central ======== */
+const sphere=new THREE.Group(); scene.add(sphere);
+const surf=new THREE.Mesh(new THREE.SphereGeometry(16,128,96),new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uVT:{value:0},uScanPh:{value:0},uVI:{value:.55},uVS:{value:2.6},uOct:{value:5},uFI:{value:.9},uFP:{value:2.6},uLon:{value:18},uLat:{value:12},uGO:{value:.12},
+    uScan:{value:1},uScanW:{value:.06},uScanI:{value:.6},uCol:{value:new THREE.Color()},uScanCol:{value:new THREE.Color()}},
+  vertexShader:`varying vec3 vP; varying vec3 vN; varying vec3 vV; void main(){ vP=position; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`uniform float uVT,uScanPh,uVI,uVS,uFI,uFP,uLon,uLat,uGO,uScan,uScanW,uScanI; uniform int uOct; uniform vec3 uCol,uScanCol; varying vec3 vP; varying vec3 vN; varying vec3 vV;
+    float h(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
+    float n(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+    float ridge(vec3 p){ float v=0.,a=.55; for(int i=0;i<6;i++){ if(i>=uOct) break; float r=1.-abs(n(p)*2.-1.); v+=a*pow(r,6.); p*=2.1; a*=.5; } return v; }
+    void main(){ vec3 p=normalize(vP);
+      float veins=uVI>0.?ridge(p*uVS+vec3(0.,uVT,0.)):0.;
+      float fres=pow(1.-max(dot(vN,vV),0.),uFP);
+      float scan=uScan*smoothstep(uScanW,0.,abs(p.y-sin(uScanPh)*.95))*uScanI;
+      float grid=(smoothstep(.985,1.,abs(sin(atan(p.z,p.x)*uLon)))+smoothstep(.975,1.,abs(sin(asin(clamp(p.y,-1.,1.))*uLat))))*uGO;
+      vec3 col=uCol*(veins*uVI+fres*uFI+grid) + uScanCol*scan*(.3+veins);
+      gl_FragColor=vec4(col,(veins*uVI*.909+fres*uFI*.889+grid+scan*.5)*.9);
+    }`}));
+sphere.add(surf);
+// núcleo oscuro: tapa lo que queda detrás (efecto eclipse). opacidad = transparencia de la esfera
+const occMat=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:1,depthWrite:true});
+const occ=new THREE.Mesh(new THREE.SphereGeometry(16*.995,64,48),occMat); occ.renderOrder=-1; sphere.add(occ);
+// red de nodos (plexus)
+const nodesGrp=new THREE.Group(); sphere.add(nodesGrp);
+let nodesPtsMat=null, nodesLinkMat=null;
+function buildNodes(){
+  disposeChildren(nodesGrp); const N=CONFIG.sphere.nodes, SR=16, r=seeded(4242);
+  const pts=[]; const NP=Math.round(N.count);
+  for(let i=0;i<NP;i++){ const y=NP>1?1-i/(NP-1)*2:0, rr=Math.sqrt(1-y*y), th=i*2.399963; pts.push(new THREE.Vector3(Math.cos(th)*rr,y,Math.sin(th)*rr).multiplyScalar(SR*1.01)); }
+  if(!NP) return;
+  nodesPtsMat=new THREE.PointsMaterial({color:0xe8e6ff,size:.35,transparent:true,opacity:N.points,blending:THREE.AdditiveBlending,depthWrite:false});
+  nodesGrp.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(pts),nodesPtsMat));
+  const arr=[],al=[],u=[], D=N.dist, D2=D*D;
+  pts.forEach((a,i)=>{ if(r()>N.density) return; const best=[];
+    for(let j=0;j<NP;j++){ if(j===i) continue; const b=pts[j]; const dx=a.x-b.x, dy=a.y-b.y, dz=a.z-b.z, d2=dx*dx+dy*dy+dz*dz; if(d2<D2) best.push([d2,b]); }
+    best.sort((x,y)=>x[0]-y[0]).slice(0,Math.round(N.links)).forEach(([,b])=>{ arr.push(a.x,a.y,a.z,b.x,b.y,b.z); const k=.3+.7*r(); al.push(k,k); u.push(0,0); }); });
+  nodesLinkMat=fadeLineMat(0xc9ccff,N.opacity);
+  if(arr.length) nodesGrp.add(new THREE.LineSegments(segGeo(arr,al,u),nodesLinkMat));
+}
+// puntos calientes ámbar
+const hotGrp=new THREE.Group(); sphere.add(hotGrp); let hots=[];
+function buildHots(){
+  disposeChildren(hotGrp); hots=[]; const r=seeded(777);
+  for(let i=0;i<Math.round(CONFIG.sphere.hot.count);i++){ const n=randDir(r); const hp=n.clone().multiplyScalar(16*1.02);
+    const s1=spr(texCore,0xffffff,2.4,1); s1.position.copy(hp); hotGrp.add(s1);
+    const ring=new THREE.Line(circle(1,48),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false}));
+    ring.position.copy(hp); ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),n); hotGrp.add(ring); hots.push({s1,ring,ph:r()*6}); }
+}
+// soporte: dos arcos meridianos con graduación
+const bracket=new THREE.Group(); scene.add(bracket);
+const bracketArcs=[], bracketTicks=[];
+for(const side of [0,Math.PI]){ const p=[]; for(let i=0;i<=80;i++){ const a=-1.1+i/80*2.2; p.push(new THREE.Vector3(Math.cos(a)*23,Math.sin(a)*23,0)); }
+  const l=new THREE.Line(lineGeo(p,u=>Math.sin(u*Math.PI)),fadeLineMat(CONFIG.orbits.color,.55)); l.rotation.y=side; bracket.add(l); bracketArcs.push(l);
+  const tk=[],al=[],uu=[]; for(let i=0;i<=22;i++){ const a=-1.1+i/22*2.2, L=i%5===0?2.2:1; tk.push(Math.cos(a)*23,Math.sin(a)*23,0, Math.cos(a)*(23+L),Math.sin(a)*(23+L),0); al.push(.7,.2); uu.push(0,0); }
+  const t=new THREE.LineSegments(segGeo(tk,al,uu),fadeLineMat(CONFIG.orbits.color,.6)); t.rotation.y=side; bracket.add(t); bracketTicks.push(t); }
+
+/* ======== SISTEMA ORBITAL: anillos rotos + proyectos que viajan por ellos ======== */
+const system=new THREE.Group(); scene.add(system);
+const amberLineMat=()=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uC:{value:new THREE.Color()},uO:{value:.35},uDash:{value:1},uDraw:{value:1}},
+  vertexShader:`attribute float u; varying float vU; void main(){ vU=u; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform vec3 uC; uniform float uO,uDash,uDraw; varying float vU;
+    void main(){ if(vU>uDraw) discard; float a=uDash>.5 ? .6*abs(1.-2.*fract(vU*30.)) : .4; gl_FragColor=vec4(uC,a*smoothstep(0.,.25,vU)*uO);} `});
+const unitSeg=(()=>{ const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,1,0,0],3)); g.setAttribute('u',new THREE.Float32BufferAttribute([0,1],1)); return g; })();
+
+const rings=[], projs=[];
+CONFIG.orbits.rings.forEach((c,i)=>{
+  const tilt=new THREE.Group(); tilt.rotation.order='ZXY'; system.add(tilt);
+  const spin=new THREE.Group(); tilt.add(spin);
+  const rng=seeded(500+i*31);
+  const mk=spr(texCore,0xffffff,4,.8); tilt.add(mk);
+  rings.push({i,tilt,spin,key:'',mats:[],spinA:0,mk,mkA:rng()*6,mkSp:.04+rng()*.06});
+  const grp=new THREE.Group(); system.add(grp);
+  const amber=spr(texCore,0xff9a4a,2.2,1); grp.add(amber);
+  const line=new THREE.Line(unitSeg,amberLineMat()); line.frustumCulled=false; system.add(line);
+  const el=document.createElement('div'); el.className='lbl'; document.getElementById('labels').appendChild(el);
+  projs.push({i,grp,amber,line,el,angle:c.phase*DEG,local:new THREE.Vector3(),world:new THREE.Vector3(),rig:null,scr:{},mult:1,html:'',lbl:{}});
+});
+function buildRing(r){
+  const c=CONFIG.orbits.rings[r.i]; disposeChildren(r.spin); r.mats=[];
+  const rng=seeded(1000+r.i*7919), R=c.radius, seed=r.i*1.9+.5, N=360;
+  const pts=[]; for(let i=0;i<=N;i++){ const t=i/N*Math.PI*2, rr=R*(1+noise1(t,seed)*.004); pts.push(new THREE.Vector3(Math.cos(t)*rr,0,Math.sin(t)*rr)); }
+  const gaps=[]; for(let k=0;k<Math.round(c.gaps);k++) gaps.push(rng()*Math.PI*2);
+  const m1=fadeLineMat(CONFIG.orbits.color,c.opacity);
+  r.spin.add(new THREE.Line(lineGeo(pts,u=>{ const t=u*Math.PI*2; let a=(1-c.wear)+c.wear*noise1(t*2.,seed+4.);
+    gaps.forEach((gp,k)=>{ const dd=Math.abs(Math.atan2(Math.sin(t-gp),Math.cos(t-gp))); a*=smoothstep(.02,.12+(k%3)*.05,dd); }); return Math.max(0,a); }),m1)); r.mats.push([m1,1]);
+  if(c.double){ const m2=fadeLineMat(CONFIG.orbits.color,c.opacity*.35);   // segundo trazo desplazado (registro de impresión imperfecto)
+    r.spin.add(new THREE.Line(lineGeo(pts.map(p=>p.clone().multiplyScalar(1.006)),u=>Math.max(0,noise1(u*12.,seed+9.))),m2)); r.mats.push([m2,.35]); }
+  if(c.ticks){ const arr=[],al=[],uu=[], step=Math.max(.5,c.tickDensity); let k=0;
+    for(let d=0;d<360-1e-6;d+=step,k++){ if(rng()<.18) continue; const a=d*DEG, L=k%10===0?6:(k%5===0?3.5:1.6);
+      arr.push(Math.cos(a)*R,0,Math.sin(a)*R, Math.cos(a)*(R-L),0,Math.sin(a)*(R-L)); const q=.4+.6*rng(); al.push(q,q*.2); uu.push(d/360,d/360); }
+    const m3=fadeLineMat(CONFIG.orbits.color,c.opacity*.83); r.spin.add(new THREE.LineSegments(segGeo(arr,al,uu),m3)); r.mats.push([m3,.83]); }
+}
+
+/* ======== estelas curvas (tipo misiles) ======== */
+const trailGrp=new THREE.Group(); scene.add(trailGrp); let trails=[];
+function buildTrails(n){
+  disposeChildren(trailGrp); trails=[]; const r=seeded(1234);
+  for(let i=0;i<n;i++){
+    const ctrl=[]; let p=randDir(r).multiplyScalar(140+r()*240); let dir=randDir(r);
+    for(let k=0;k<6;k++){ ctrl.push(p.clone()); dir.add(randDir(r).multiplyScalar(.9)).normalize(); p=p.clone().add(dir.clone().multiplyScalar(60+r()*80)); }
+    const pts=new THREE.CatmullRomCurve3(ctrl).getPoints(220); const geo=lineGeo(pts,u=>u);
+    const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uC:{value:new THREE.Color()},uHead:{value:0},uLen:{value:.5}},
+      vertexShader:`attribute float u; varying float vU; void main(){ vU=u; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+      fragmentShader:`uniform vec3 uC; uniform float uHead,uLen; varying float vU; void main(){ float d=uHead-vU; if(d<0.||d>uLen) discard; float a=pow(1.-d/uLen,1.3); gl_FragColor=vec4(uC*1.6,a);} `});
+    const faint=fadeLineMat(0xffffff,.07);
+    trailGrp.add(new THREE.Line(geo,mat)); trailGrp.add(new THREE.Line(geo.clone(),faint));
+    const head=spr(texCore,0xffffff,7,.9); trailGrp.add(head);
+    trails.push({pts,mat,faint,head,ph:r(),sp:.05+r()*.07,len:.35+r()*.35,u:0});
+  }
+}
+
+/* =====================================================================
+   DESTELLOS — capas en espacio de pantalla (se suman antes del bloom)
+   ===================================================================== */
+const flareScene=new THREE.Scene();
+const flareCam=new THREE.OrthographicCamera(0,W,H,0,-1,1);
+const QUAD=new THREE.PlaneGeometry(2,2);
+const OCC={value:new THREE.Vector3()};      // centro (px) y radio (px) del disco de la esfera en pantalla
+const FLARE_VS=`varying vec2 vP; varying vec2 vS; void main(){ vP=position.xy; vec4 w=modelMatrix*vec4(position,1.); vS=w.xy; gl_Position=projectionMatrix*viewMatrix*w; }`;
+const FLARE_FS=`
+uniform vec3 uColor; uniform float uI; uniform vec2 uExt; uniform sampler2D uTex; uniform float uChroma; uniform vec4 uA; uniform vec3 uOcc; uniform float uOccK;
+varying vec2 vP; varying vec2 vS;
+float occl(){ if(uOccK<=0.) return 1.; float d=length(vS-uOcc.xy); return 1.-uOccK*(1.-smoothstep(uOcc.z*.985,uOcc.z*1.035,d)); }
+float bar(float along,float across,float L,float w){ return exp(-across*across/(w*w))*max(1.-abs(along)/L,0.); }
+void main(){
+  vec2 p=vP; vec2 px=vP*uExt; float d=length(p); vec3 col=vec3(0.);
+#if TYPE==0
+  col=uColor*pow(texture2D(uTex,p*.5+.5).a,uA.x);
+#elif TYPE==1
+  float k=uChroma;
+  col=uColor*vec3(texture2D(uTex,p/(1.+k)*.5+.5).a, texture2D(uTex,p*.5+.5).a, texture2D(uTex,p/max(1.-k,.05)*.5+.5).a);
+#elif TYPE==2
+  float ax=pow(max(1.-abs(p.x),0.),uA.w); float s=0.; float n=uA.x;
+  for(int i=0;i<9;i++){ float fi=float(i); if(fi>=n) break;
+    float off= n<=1. ? 0. : (fi/(n-1.)-.5)*uA.y;
+    float wt= n<=1. ? 1. : mix(1.,.45,abs(fi/(n-1.)-.5)*2.);
+    float q=(px.y-off)/uA.z; s+=exp(-q*q)*wt; }
+  float k=uChroma*6.;
+  col=uColor*s*ax*vec3(1.+k*p.y,1.,1.-k*p.y);
+#elif TYPE==3
+  float k=uChroma;
+  vec3 hh=vec3(bar(px.x,px.y,uA.x*(1.+k),uA.z),bar(px.x,px.y,uA.x,uA.z),bar(px.x,px.y,uA.x*max(1.-k,.05),uA.z));
+  vec3 vv=vec3(bar(px.y,px.x,uA.y*(1.+k),uA.z),bar(px.y,px.x,uA.y,uA.z),bar(px.y,px.x,uA.y*max(1.-k,.05),uA.z));
+  col=uColor*(hh+vv);
+#elif TYPE==4
+  float an=atan(p.y,p.x); float sp=pow(abs(cos(an*uA.x*.5)),uA.y);
+  float k=uChroma; vec3 dd=vec3(d/(1.+k),d,d/max(1.-k,.05));
+  vec3 rad=max(1.-dd,0.); rad=rad*rad*sqrt(rad);
+  col=uColor*sp*rad;
+#elif TYPE==5
+  float r=length(vec2(px.x/max(uA.w,.01),px.y)); float k=uA.z;
+  vec3 q=(vec3(r)-uA.x*vec3(1.+k,1.,1.-k))/uA.y;
+  col=uColor*exp(-q*q);
+#elif TYPE==6
+  float k=uA.y; vec3 dd=vec3(d*(1.-k*.12),d,d*(1.+k*.12));
+  vec3 disk=smoothstep(vec3(1.),vec3(.86),dd); vec3 rim=smoothstep(vec3(.62),vec3(.95),dd)*disk;
+  col=uColor*mix(disk*.4,rim,uA.x)*(.65+.35*dd);
+#endif
+  gl_FragColor=vec4(col*uI*occl(),1.);
+}`;
+function flareMesh(type){
+  const m=new THREE.Mesh(QUAD,new THREE.ShaderMaterial({defines:{TYPE:type},transparent:true,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{uColor:{value:new THREE.Color()},uI:{value:1},uExt:{value:new THREE.Vector2(1,1)},uTex:{value:texCore},uChroma:{value:0},uA:{value:new THREE.Vector4(1,0,0,0)},uOcc:OCC,uOccK:{value:0}},
+    vertexShader:FLARE_VS,fragmentShader:FLARE_FS}));
+  m.frustumCulled=false; m.visible=false; flareScene.add(m); return m;
+}
+function flicker(b,t,seed){ const A=b.flickerAmp, s=b.flickerSpeed;
+  switch(b.flicker){
+    case 'respiración': return 1+A*Math.sin(t*s+seed);
+    case 'ruido': return Math.max(0,1+A*(vnoise(t*s*3+seed*10)*2-1)*1.4);
+    case 'estrobo': { const x=t*s*2+seed*7, k=Math.floor(x), f=x-k; return hash1(k)>.86 ? 1+A*5*(1-f)*(1-f) : 1; }
+    default: return 1; } }
+const LAYERS=['core','glow','rays','anam','cross','star','halo'];
+const LTYPE={core:0,glow:0,rays:1,anam:2,cross:3,star:4,halo:5};
+class FlareRig{
+  constructor(texSize,seed){
+    this.seed=seed; this.hv=0; this.e=0; this.key='';
+    this.m={}; for(const k of LAYERS) this.m[k]=flareMesh(LTYPE[k]);
+    this.ghosts=Array.from({length:12},()=>flareMesh(6));
+    this.cv=document.createElement('canvas'); this.cv.width=this.cv.height=texSize; this.ctx=this.cv.getContext('2d');
+    this.tex=new THREE.CanvasTexture(this.cv); this.m.rays.material.uniforms.uTex.value=this.tex;
+  }
+  ensureRays(L){
+    const key=[L.count,L.lenRand,L.angRand,L.widthMin,L.widthMax,L.tipSoft,L.seed,L.size,L.length,L.thickness].join('|');
+    if(key===this.key) return; this.key=key;
+    const S=this.cv.width, g=this.ctx; g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,S,S); g.translate(S/2,S/2); g.globalCompositeOperation='lighter';
+    const r=seeded(L.seed*7+13), N=Math.round(L.count), pxU=S/Math.max(L.size*L.length,1e-3), soft=Math.min(.999,Math.max(0,1-L.tipSoft));
+    for(let i=0;i<N;i++){
+      const a=i/N*Math.PI*2+(r()-.5)*Math.PI*2*L.angRand;
+      const len=S/2*.98*(1-L.lenRand*(1-Math.pow(r(),2)));
+      const w=Math.max(.6,(L.widthMin+(L.widthMax-L.widthMin)*r())*L.thickness*pxU);
+      const gr=g.createLinearGradient(0,0,Math.cos(a)*len,Math.sin(a)*len);
+      gr.addColorStop(0,'rgba(255,255,255,.55)'); if(soft>0) gr.addColorStop(soft*.95,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.strokeStyle=gr; g.lineWidth=w; g.beginPath(); g.moveTo(0,0); g.lineTo(Math.cos(a)*len,Math.sin(a)*len); g.stroke(); }
+    this.tex.needsUpdate=true;
+  }
+  hide(){ for(const k of LAYERS) this.m[k].visible=false; this.ghosts.forEach(m=>m.visible=false); }
+  update(def,o){
+    const b=def.behavior, step=o.dt/Math.max(b.hoverDur,.02);
+    this.hv=o.hover>this.hv?Math.min(o.hover,this.hv+step):Math.max(o.hover,this.hv-step);
+    const e=this.hv*this.hv*(3-2*this.hv); this.e=e;
+    const I=o.mult*flicker(b,o.t,this.seed);
+    const grow=1+b.hoverGrow*e, str=1+b.hoverStretch*e;
+    const ppw=Math.min(o.ppw,o.ppw0*b.maxScale);
+    const vis=o.visible&&I>.0005, occK=b.occlusion&&o.behind?b.occStrength:0, t=o.t;
+    const set=(m,L,ex,ey)=>{ m.visible=true; m.position.set(o.x,o.y,0); m.rotation.z=(L.rotation+L.rotSpeed*t)*DEG; m.scale.set(ex,ey,1);
+      const u=m.material.uniforms; u.uExt.value.set(ex,ey); u.uColor.value.set(L.color); u.uI.value=L.intensity*I; u.uOccK.value=occK; u.uChroma.value=def.chroma; return u; };
+    for(const k of LAYERS){ const m=this.m[k], L=def[k]; m.visible=false; if(!vis||!L.on||L.intensity<=0||L.size<=0) continue;
+      if(k==='core'||k==='glow'){ const r=Math.max(L.size*.5*ppw*grow,1); const u=set(m,L,r*L.length,r); u.uA.value.x=L.thickness; }
+      else if(k==='rays'){ this.ensureRays(L); const r=Math.max(L.size*.5*L.length*ppw*grow*str,1); set(m,L,r,r); }
+      else if(k==='anam'){ const w=Math.max(L.thickness*.5*L.size*ppw,.6), sp=L.height*L.size*ppw, ex=Math.max(L.length*.5*L.size*ppw*grow*str,2);
+        const u=set(m,L,ex,(L.lines>1?sp*.5:0)+w*3+1); u.uA.value.set(Math.round(L.lines),sp,w,L.fade); }
+      else if(k==='cross'){ const mm=L.size*L.length*grow*str*ppw, w=Math.max(L.thickness*.5*L.size*ppw,.6), hx=Math.max(L.lenH*.5*mm,1), vy=Math.max(L.lenV*.5*mm,1);
+        const u=set(m,L,Math.max(hx*(1+def.chroma),w*3),Math.max(vy*(1+def.chroma),w*3)); u.uA.value.set(hx,vy,w,0); }
+      else if(k==='star'){ const r=Math.max(L.size*.5*L.length*ppw*grow*str,1); const u=set(m,L,r,r); u.uA.value.set(L.points,Math.pow(10,3.2-L.thickness*2.5),0,0); }
+      else if(k==='halo'){ const R=L.size*.5*ppw*grow, Wd=Math.max(L.thickness*.5*ppw,.7), ext=R*(1+L.chroma)+Wd*4; const u=set(m,L,ext*L.length,ext); u.uA.value.set(R,Wd,L.chroma,L.length); }
+    }
+    // fantasmas: cadena de reflejos en la línea luz → centro de pantalla
+    const G=def.ghosts, n=(vis&&G.on&&G.intensity>0)?Math.min(12,Math.round(G.count)):0;
+    const ga=(G.rotation+G.rotSpeed*t)*DEG, ca=Math.cos(ga), sa=Math.sin(ga);
+    this.ghosts.forEach((m,i)=>{ m.visible=false; if(i>=n||o.ghostVis<=.001) return;
+      const tp=1-(i+1)*G.spacing; let dx=(o.x-o.cx)*tp, dy=(o.y-o.cy)*tp; [dx,dy]=[dx*ca-dy*sa,dx*sa+dy*ca];
+      const r=Math.max(G.size*o.H*.5*(1+(hash1(i*12.9+this.seed)-.5)*1.2*G.length)*grow,2);
+      m.visible=true; m.position.set(o.cx+dx,o.cy+dy,0); m.rotation.z=0; m.scale.set(r,r,1);
+      const u=m.material.uniforms; u.uExt.value.set(r,r); u.uColor.value.set(G.color).offsetHSL((hash1(i*3.7+1)-.5)*.16,0,0);
+      u.uI.value=G.intensity*I*o.ghostVis*(.45+hash1(i*5.3+2)*.9)*(i%3===1?.6:1); u.uA.value.set(G.thickness,G.chroma,0,0); u.uOccK.value=0; u.uChroma.value=0; });
+  }
+}
+const centerRig=new FlareRig(1024,1.3);
+projs.forEach((p,i)=>{ p.rig=new FlareRig(512,2.1+i*1.7); });
+const projFlare=i=>CONFIG.flares.projectsMode==='individual'?CONFIG.flares.perProject[i]:CONFIG.flares.projects;
+
+/* =====================================================================
+   POSTPROCESADO: bloom + halación + suciedad de lente + película (grano, manchas, polvo, viñeta) + aberración
+   ===================================================================== */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const flarePass=new RenderPass(flareScene,flareCam); flarePass.clear=false; composer.addPass(flarePass);
+const bloom=new UnrealBloomPass(new THREE.Vector2(W,H),.7,.6,.42); composer.addPass(bloom);
+const dirtTex=(()=>{ const r=seeded(2024),S=512,c=document.createElement('canvas'); c.width=c.height=S; const g=c.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,S,S);
+  for(let i=0;i<70;i++){ const x=r()*S,y=r()*S,rad=4+r()*40; const gr=g.createRadialGradient(x,y,0,x,y,rad); const a=r()*.25;
+    gr.addColorStop(0,`rgba(255,255,255,${a})`); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.beginPath(); g.arc(x,y,rad,0,7); g.fill(); }
+  for(let i=0;i<12;i++){ g.strokeStyle=`rgba(255,255,255,${.05+r()*.08})`; g.lineWidth=.6; g.beginPath(); let x=r()*S,y=r()*S; g.moveTo(x,y);
+    for(let k=0;k<6;k++){ x+=(r()-.5)*60; y+=(r()-.5)*60; g.lineTo(x,y);} g.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; })();
+// polvo y pelusas de película: R = motas claras, G = motas oscuras
+const filmDustTex=(()=>{ const r=seeded(88),S=1024,c=document.createElement('canvas'); c.width=c.height=S; const g=c.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,S,S); g.globalCompositeOperation='lighter';
+  const col=(dark,a)=>dark?`rgba(0,255,0,${a})`:`rgba(255,0,0,${a})`;
+  for(let i=0;i<140;i++){ const dark=r()<.65, x=r()*S, y=r()*S, rad=.5+Math.pow(r(),3)*3.2; g.fillStyle=col(dark,.35+r()*.6); g.beginPath(); g.arc(x,y,rad,0,7); g.fill(); }
+  for(let i=0;i<16;i++){ const dark=r()<.7; g.strokeStyle=col(dark,.25+r()*.5); g.lineWidth=.5+r()*1.1; g.beginPath(); let x=r()*S,y=r()*S,a=r()*7; g.moveTo(x,y);
+    const n=4+Math.floor(r()*8); for(let k=0;k<n;k++){ a+=(r()-.5)*1.6; const L=6+r()*18; const x2=x+Math.cos(a)*L, y2=y+Math.sin(a)*L; g.quadraticCurveTo(x+(r()-.5)*10,y+(r()-.5)*10,x2,y2); x=x2; y=y2; } g.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; })();
+const fin=new ShaderPass({uniforms:{tDiffuse:{value:null},tDirt:{value:dirtTex},tDust:{value:filmDustTex},uRes:{value:new THREE.Vector2(W,H)},uFrame:{value:0},
+    uGrain:{value:.075},uGrainSize:{value:1.3},uBlot:{value:.55},uBlotScale:{value:2.2},uBlotC:{value:1},uBlotT:{value:0},uDust:{value:.6},uDustOff:{value:new THREE.Vector2()},uDustRot:{value:0},
+    uVig:{value:1.45},uVigIrr:{value:.55},uDirtI:{value:1},uHal:{value:1},uHalCol:{value:new THREE.Color()},uCA:{value:.02}},
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform sampler2D tDiffuse,tDirt,tDust; uniform vec2 uRes,uDustOff; uniform float uFrame,uGrain,uGrainSize,uBlot,uBlotScale,uBlotC,uBlotT,uDust,uDustRot,uVig,uVigIrr,uDirtI,uHal,uCA; uniform vec3 uHalCol; varying vec2 vUv;
+    float h2(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+    float h3(vec3 p){ p=fract(p*.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
+    float vn(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z); }
+    float fbm(vec3 p){ float v=0.,a=.5; for(int i=0;i<4;i++){ v+=a*vn(p); p=p*2.07+vec3(3.1,1.7,5.3); a*=.5; } return v; }
+    void main(){ vec2 d=vUv-.5; float k=dot(d,d); vec2 asp=vec2(uRes.x/uRes.y,1.);
+      vec3 c=vec3(texture2D(tDiffuse,vUv+d*k*uCA).r, texture2D(tDiffuse,vUv).g, texture2D(tDiffuse,vUv-d*k*uCA).b);
+      if(uHal>0.||uDirtI>0.){ // brillo local amplio -> halación cálida + suciedad de lente
+        vec3 b=vec3(0.); for(int i=0;i<12;i++){ float a=float(i)*.5236; for(int j=1;j<3;j++){ b+=texture2D(tDiffuse,vUv+vec2(cos(a),sin(a))*.045*float(j)).rgb; } } b/=24.;
+        float lum=dot(b,vec3(.3,.5,.2));
+        c+=uHalCol*max(lum-.18,0.)*.35*uHal;
+        c+=texture2D(tDirt,vUv*asp*.9).rgb*max(lum-.08,0.)*1.6*uDirtI; }
+      // manchas orgánicas de baja frecuencia (película / papel quemado)
+      if(uBlot>0.){ vec3 q=vec3(vUv*asp*uBlotScale,uBlotT);
+        float m=(fbm(q)-.5)*.8+(fbm(q*3.7+11.)-.5)*.4; m*=uBlotC;
+        c*=max(0.,1.+m*uBlot*1.4);
+        c+=vec3(1.,.86,.72)*max(m,0.)*uBlot*.014; }
+      // viñeta irregular
+      float vi=fbm(vec3(vUv*asp*1.6,uBlotT*.5+3.))-.5;
+      c*=max(0.,1.-(k*(1.+vi*uVigIrr*1.6)+vi*uVigIrr*.05)*uVig);
+      // polvo y pelusas (saltan de fotograma en fotograma)
+      if(uDust>0.){ vec2 du=(vUv-.5)*asp; float cr=cos(uDustRot), sr=sin(uDustRot); du=mat2(cr,-sr,sr,cr)*du*.85+uDustOff;
+        vec2 ds=texture2D(tDust,du).rg; c=c*(1.-ds.g*min(uDust,1.5)*.8)+vec3(.9,.88,.85)*ds.r*uDust*.07; }
+      // grano que hierve
+      vec2 gp=floor(gl_FragCoord.xy/uGrainSize); float fr=mod(uFrame,256.);
+      float g=(h2(gp+fr*vec2(17.3,41.7))-.5)+(h2(gp*1.7+fr*vec2(5.1,9.9))-.5)*.5;
+      c+=g*uGrain*(.55+dot(max(c,0.),vec3(.33)));
+      c=pow(max(c,0.),vec3(1.02,1.,.97));
+      gl_FragColor=vec4(c,1.);} `});
+composer.addPass(fin); composer.addPass(new OutputPass());
+const TONE={'ACES':THREE.ACESFilmicToneMapping,'AgX':THREE.AgXToneMapping,'Reinhard':THREE.ReinhardToneMapping,'Cineon':THREE.CineonToneMapping,'Lineal':THREE.LinearToneMapping,'Ninguno':THREE.NoToneMapping};
+Object.keys(TONE).forEach(k=>{ if(TONE[k]===undefined) delete TONE[k]; });
+
+/* ======== interfaz: título, etiquetas, botones ======== */
+const titleEl=document.getElementById('title');
+function applyText(){ const T=CONFIG.text, s=titleEl.style;
+  s.fontSize=T.size+'px'; s.letterSpacing=T.spacing+'em'; s.paddingLeft=T.spacing+'em'; s.opacity=T.opacity;
+  s.textShadow=T.glow>0?`0 0 ${12*Math.max(.3,T.glow)}px rgba(190,170,255,${Math.min(1,T.glow)}), 0 0 ${3*T.glow}px rgba(255,255,255,${Math.min(1,T.glow*.5)})`:'none';
+  s.left=s.right='auto'; s.transform='none';
+  if(T.position==='abajo-izquierda') s.left=`calc(28px - ${T.spacing}em)`;
+  else if(T.position==='centro'){ s.left='50%'; s.transform='translateX(-50%)'; }
+  else s.right=`calc(28px - ${T.spacing}em)`; }
+applyText();
+titleEl.addEventListener('click',()=>goOverview());
+const toastEl=document.getElementById('toast'); let toastT=0;
+function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),1400); }
+const guiWrap=document.getElementById('guiWrap'), btnGui=document.getElementById('btnGui');
+btnGui.addEventListener('click',()=>{ guiWrap.classList.toggle('on'); btnGui.classList.toggle('on',guiWrap.classList.contains('on')); });
+document.getElementById('btnIntro').addEventListener('click',()=>startIntro());
+addEventListener('keydown',e=>{ const tg=e.target; if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.isContentEditable)) return;
+  if(e.key==='h'||e.key==='H'){ document.body.classList.toggle('clean'); } });
+
+/* ======== cámara: intro, viajes, foco ======== */
+const intro={on:false,t:0}; let travel=null, focus=null; const focusPrev=new THREE.Vector3(), FAR=new THREE.Vector3(), ORIGIN=new THREE.Vector3();
+function startIntro(){ intro.on=true; intro.t=0; focus=null; travel=null; autoPaused=false; HOME.fromArray(CONFIG.camera.home); controls.enabled=false; controls.target.set(0,0,0); }
+function travelTo(kind,i){ travel={t:0,kind,i,fromPos:camera.position.clone(),fromTgt:controls.target.clone()}; focus=null; intro.on=false; controls.enabled=false; }
+function openProject(i){ travelTo('project',i); onProjectOpen(`0${i+1}`); }
+function goOverview(){ autoPaused=false; HOME.fromArray(CONFIG.camera.home); travelTo('home'); }
+const _to=new THREE.Vector3(), _tt=new THREE.Vector3(), _d=new THREE.Vector3();
+function cameraStep(dt){
+  if(intro.on){
+    intro.t+=dt; const p=clamp01(intro.t/Math.max(.1,CONFIG.camera.introDur)), e=easeIO(clamp01(p/.88));
+    FAR.set(HOME.x*1.8,HOME.y+900,HOME.z*1.8); camera.position.lerpVectors(FAR,HOME,e); controls.target.set(0,0,0);
+    if(p>=1){ intro.on=false; controls.enabled=true; }
+  } else if(travel){
+    travel.t+=dt/Math.max(.1,CONFIG.camera.travelDur); const k=clamp01(travel.t), e=easeIO(k);
+    if(travel.kind==='project'){ const P=projs[travel.i].world; _tt.copy(P); _to.copy(P).add(_d.copy(P).normalize().multiplyScalar(48)); _to.y+=14; }
+    else { _tt.copy(ORIGIN); _to.copy(HOME); }
+    camera.position.lerpVectors(travel.fromPos,_to,e); camera.position.y+=Math.sin(e*Math.PI)*travel.fromPos.distanceTo(_to)*.12;
+    controls.target.lerpVectors(travel.fromTgt,_tt,e);
+    if(k>=1){ if(travel.kind==='project'){ focus=travel.i; focusPrev.copy(projs[travel.i].world); } travel=null; controls.enabled=true; }
+  } else if(focus!==null){ const P=projs[focus].world; _d.subVectors(P,focusPrev); camera.position.add(_d); controls.target.add(_d); focusPrev.copy(P); }
+  controls.autoRotate=CONFIG.camera.autoRotate&&!autoPaused&&focus===null&&!travel&&!intro.on&&hovered<0;
+  controls.update();
+}
+
+/* ======== puntero: hover y clic/tap ======== */
+const pointer={x:0,y:0,in:false}; let down=null, hovered=-2;
+const cv=renderer.domElement;
+cv.addEventListener('pointermove',e=>{ pointer.x=e.clientX; pointer.y=e.clientY; pointer.in=true; });
+cv.addEventListener('pointerleave',()=>{ pointer.in=false; });
+cv.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,t:performance.now()}; pointer.x=e.clientX; pointer.y=e.clientY; pointer.in=true; });
+cv.addEventListener('pointerup',e=>{
+  if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<8&&performance.now()-down.t<450){ const hit=pickAt(e.clientX,e.clientY); if(hit>=0) openProject(hit); }
+  down=null; if(e.pointerType!=='mouse') pointer.in=false; });
+const sph={x:0,y:0,top:0,r:0,depth:0};
+function pickAt(x,y){ let best=-1,bd=1e9;
+  projs.forEach((p,i)=>{ const s=p.scr; if(!s.front||p.mult<.3) return; const d=Math.hypot(s.x-x,s.top-y); if(d<26+(p.coreR||0)&&d<bd){ bd=d; best=i; } });
+  if(best>=0) return best; if(sph.r>0&&Math.hypot(sph.x-x,sph.top-y)<sph.r) return -1; return -2; }
+
+/* ======== proyección ======== */
+const _v=new THREE.Vector3();
+function toScreen(world,out){ _v.copy(world).applyMatrix4(camera.matrixWorldInverse); out.depth=-_v.z; out.front=out.depth>.1;
+  _v.applyMatrix4(camera.projectionMatrix); out.nx=_v.x; out.ny=_v.y; out.x=(_v.x+1)*.5*W; out.y=(_v.y+1)*.5*H; out.top=H-out.y; return out; }
+const fmt=v=>(v<0?'−':'+')+Math.abs(v).toFixed(1).padStart(5,'0');
+
+/* ======== reconstrucciones bajo demanda (solo cuando cambia un ajuste estructural) ======== */
+const keys={};
+function rebuildIfChanged(){
+  const S=CONFIG.sphere;
+  rings.forEach(r=>{ const c=CONFIG.orbits.rings[r.i]; const k=[c.radius,c.gaps,c.wear,c.double,c.ticks,c.tickDensity].join(); if(k!==r.key){ r.key=k; buildRing(r);} });
+  const kn=[S.nodes.count,S.nodes.dist,S.nodes.links,S.nodes.density].join(); if(kn!==keys.nodes){ keys.nodes=kn; buildNodes(); }
+  const kh=Math.round(S.hot.count); if(kh!==keys.hot){ keys.hot=kh; buildHots(); }
+  const kt=Math.round(CONFIG.trails.count); if(kt!==keys.trails){ keys.trails=kt; buildTrails(kt); }
+  const kd=Math.round(CONFIG.dust.count); if(kd!==keys.dust){ keys.dust=kd; buildDust(kd); }
+}
+
+/* ======== bucle ======== */
+let T=0, last=performance.now()/1000, skyOff=0, veinT=0, scanPh=0, hotPh=0, blotT=0, dustJump=0;
+const tmpM=new THREE.Matrix4(), X=new THREE.Vector3(1,0,0), ndir=new THREE.Vector3(), centerScr={};
+function loop(){
+  requestAnimationFrame(loop);
+  const now=performance.now()/1000, dt=Math.min(.05,now-last); last=now; T+=dt; const t=T+6;
+  const C=CONFIG, S=C.sphere, O=C.orbits, F=C.film;
+  rebuildIfChanged();
+
+  // render / post
+  renderer.toneMappingExposure=C.post.exposure; renderer.toneMapping=TONE[C.post.toneMapping]??THREE.ACESFilmicToneMapping;
+  bloom.strength=C.post.bloomStrength; bloom.radius=C.post.bloomRadius; bloom.threshold=C.post.bloomThreshold;
+  if(camera.fov!==C.camera.fov){ camera.fov=C.camera.fov; camera.updateProjectionMatrix(); }
+  controls.dampingFactor=C.camera.damping; controls.minDistance=C.camera.minDist; controls.maxDistance=C.camera.maxDist; controls.autoRotateSpeed=C.camera.autoSpeed;
+
+  // intro: progreso para anillos y luces
+  const ip=intro.on?clamp01(intro.t/Math.max(.1,C.camera.introDur)):1;
+
+  // esfera
+  sphere.scale.setScalar(S.radius/16); bracket.scale.setScalar(S.radius/16);
+  sphere.rotation.y+=S.spin*DEG*dt; bracket.rotation.y+=S.brackets.spin*DEG*dt;
+  veinT+=S.veins.speed*dt; scanPh+=S.scan.speed*dt; hotPh+=S.hot.pulse*dt;
+  const su=surf.material.uniforms;
+  su.uVT.value=veinT; su.uScanPh.value=scanPh; su.uVI.value=S.veins.intensity; su.uVS.value=S.veins.scale; su.uOct.value=Math.round(S.veins.octaves);
+  su.uFI.value=S.fresnel.intensity; su.uFP.value=S.fresnel.power; su.uLon.value=Math.round(S.grid.lon); su.uLat.value=Math.round(S.grid.lat); su.uGO.value=S.grid.opacity;
+  su.uScan.value=S.scan.on?1:0; su.uScanW.value=S.scan.width; su.uScanI.value=S.scan.intensity; su.uCol.value.set(S.color); su.uScanCol.value.set(S.scan.color);
+  occMat.opacity=S.opacity; occMat.depthWrite=S.opacity>=.5; occ.visible=S.opacity>0;
+  if(nodesPtsMat) nodesPtsMat.opacity=S.nodes.points; if(nodesLinkMat) nodesLinkMat.uniforms.uO.value=S.nodes.opacity;
+  hots.forEach(h=>{ const k=(hotPh+h.ph)%1; h.ring.scale.setScalar(1+k*3); h.ring.material.opacity=.6*(1-k); h.ring.material.color.set(S.hot.color); h.s1.material.color.set(S.hot.color); h.s1.scale.setScalar(S.hot.size); });
+  bracket.visible=S.brackets.on;
+  bracketArcs.forEach(l=>{ l.material.uniforms.uC.value.set(O.color); l.material.uniforms.uO.value=.55*S.brackets.opacity; });
+  bracketTicks.forEach(l=>{ l.visible=S.brackets.ticks; l.material.uniforms.uC.value.set(O.color); l.material.uniforms.uO.value=.6*S.brackets.opacity; });
+
+  // sistema orbital
+  if(O.systemSpinOn) system.rotation.y+=O.systemSpin*DEG*dt;
+  rings.forEach(r=>{ const c=O.rings[r.i]; r.tilt.rotation.set(c.tiltX*DEG,0,c.tiltZ*DEG); r.spinA+=c.spin*DEG*dt; r.spin.rotation.y=r.spinA;
+    r.mkA+=r.mkSp*O.markerSpeed*dt; r.mk.position.set(Math.cos(r.mkA)*c.radius,0,Math.sin(r.mkA)*c.radius); r.mk.visible=O.markers; r.tilt.updateMatrix(); });
+  system.updateMatrixWorld(true);
+  projs.forEach(p=>{ const c=O.rings[p.i], r=rings[p.i]; p.angle+=c.speed*DEG*dt;
+    p.local.set(Math.cos(p.angle)*c.radius,0,Math.sin(p.angle)*c.radius).applyMatrix4(r.tilt.matrix);
+    p.grp.position.copy(p.local); p.world.copy(p.local).applyMatrix4(system.matrixWorld);
+    const len=p.local.length(); ndir.copy(p.local).divideScalar(len||1);
+    p.line.quaternion.setFromUnitVectors(X,ndir); p.line.scale.set(len,1,1); p.line.position.set(0,0,0); });
+
+  cameraStep(dt);
+
+  // fondo y polvo
+  skyOff+=C.bg.drift*dt; const su2=sky.material.uniforms;
+  su2.uOff.value=skyOff; su2.uBase.value.set(C.bg.base); su2.uC1.value.set(C.bg.c1); su2.uC2.value.set(C.bg.c2); su2.uC3.value.set(C.bg.c3);
+  su2.uDust.value=C.bg.dust; su2.uNeb.value=C.bg.amount; su2.uRW.value=C.bg.width; su2.uScale.value=C.bg.scale; su2.uStarThr.value=1-C.bg.stars*.002; su2.uStarB.value=C.bg.starBright;
+  su2.uReg.value.set(Math.cos(C.bg.dirEl*DEG)*Math.cos(C.bg.dirAz*DEG),Math.sin(C.bg.dirEl*DEG),Math.cos(C.bg.dirEl*DEG)*Math.sin(C.bg.dirAz*DEG));
+  sky.position.copy(camera.position); dustMat.uniforms.uCam.value.copy(camera.position); dustMat.uniforms.uSize.value=C.dust.size; dustMat.uniforms.uBright.value=C.dust.bright;
+
+  // estelas
+  trails.forEach(tr=>{ tr.u+=tr.sp*C.trails.speed*dt; const u=(tr.u+tr.ph)%1.4; tr.mat.uniforms.uHead.value=u; tr.mat.uniforms.uLen.value=tr.len*C.trails.length;
+    tr.mat.uniforms.uC.value.set(C.trails.color); tr.faint.uniforms.uC.value.set(C.trails.color); tr.head.material.color.set(C.trails.color);
+    const idx=Math.min(tr.pts.length-1,Math.floor(Math.min(u,1)*(tr.pts.length-1))); tr.head.position.copy(tr.pts[idx]); tr.head.material.opacity=u<1?.9:0; });
+
+  // ---- encuadre con inclinación (roll) y todo lo que depende de la pantalla ----
+  const roll=C.camera.roll*DEG; camera.rotateZ(roll); camera.updateMatrixWorld();
+  const tanH=Math.tan(camera.fov*DEG/2), ppw0=H/(2*HOME.length()*tanH);
+  toScreen(ORIGIN,centerScr); sph.x=centerScr.x; sph.y=centerScr.y; sph.top=centerScr.top; sph.depth=centerScr.depth;
+  const camDist=camera.position.length(); sph.r=(centerScr.front&&camDist>S.radius)?Math.tan(Math.asin(Math.min(S.radius/camDist,.999)))/tanH*H/2:0;
+  OCC.value.set(sph.x,sph.y,sph.r);
+  projs.forEach(p=>toScreen(p.world,p.scr));
+  hovered=pointer.in?pickAt(pointer.x,pointer.y):-2;
+  cv.style.cursor=hovered>=0?'pointer':'';
+
+  // hover: el proyecto activo se intensifica, el resto baja
+  const P=C.projects;
+  const activeE=projs.map(p=>p.rig.e);
+  projs.forEach((p,i)=>{
+    const others=Math.max(0,...activeE.filter((_,j)=>j!==i)), dimK=1-P.dimOthers*others;
+    const on=intro.on?smoothstep(.5+i*.08,.62+i*.08,ip):1;
+    p.mult=on*dimK*(1+P.hoverBoost*p.rig.e);
+    const s=p.scr, def=projFlare(i);
+    const ppw=s.front?H/(2*s.depth*tanH):0; p.coreR=def.core.size*.5*Math.min(ppw,ppw0*def.behavior.maxScale);
+    const off=Math.max(Math.abs(s.nx),Math.abs(s.ny));
+    p.rig.update(def,{x:s.x,y:s.y,cx:W/2,cy:H/2,H,t,dt,ppw,ppw0,hover:(hovered===i||focus===i||(travel&&travel.kind==='project'&&travel.i===i))?1:0,mult:p.mult,
+      visible:s.front&&off<2.5,behind:s.depth>sph.depth,ghostVis:smoothstep(1.25,.85,off)*(s.depth>sph.depth&&Math.hypot(s.x-sph.x,s.y-sph.y)<sph.r?.15:1)});
+    // anillo iluminado
+    const ring=rings[i], c=O.rings[i], ringK=c.opacity*(1+P.ringGlow*p.rig.e)*dimK, draw=intro.on?smoothstep(.12+i*.07,.47+i*.07,ip):1;
+    ring.mats.forEach(([m,f])=>{ m.uniforms.uO.value=ringK*f; m.uniforms.uC.value.set(O.color); m.uniforms.uDraw.value=draw; });
+    ring.mk.material.opacity=.8*draw;
+    // punto ámbar + línea ámbar
+    p.amber.visible=P.amberDot; p.amber.material.opacity=on; p.amber.material.color.set(O.amber.color);
+    const lu=p.line.material.uniforms; p.line.visible=O.amber.on; lu.uC.value.set(O.amber.color); lu.uO.value=O.amber.opacity*dimK*(1+p.rig.e); lu.uDash.value=O.amber.dashed?1:0; lu.uDraw.value=on;
+    // etiqueta
+    const name=(P.list[i].name||'').toUpperCase(), w=p.world;
+    const html=`<i>●</i> 0${i+1} — ${name}<span class="co">X ${fmt(w.x)} · Y ${fmt(w.y)} · Z ${fmt(w.z)} · R ${c.radius.toFixed(0)}</span>`;
+    if(html!==p.html){ p.el.innerHTML=html; p.html=html; }
+    const showLbl=P.labels==='siempre'||(P.labels==='hover'&&p.rig.e>.01);
+    const op=s.front&&showLbl?Math.min(1,(P.labelOpacity*dimK+(1-P.labelOpacity)*p.rig.e)*on*(P.labels==='hover'?p.rig.e:1)):0;
+    const L=p.lbl; if(L.op!==op){ p.el.style.opacity=op.toFixed(3); L.op=op; }
+    if(L.fs!==P.labelSize){ p.el.style.fontSize=P.labelSize+'px'; L.fs=P.labelSize; }
+    p.el.classList.toggle('hv',p.rig.e>.5);
+    p.el.style.transform=`translate(${(s.x+14).toFixed(1)}px,${(s.top-18).toFixed(1)}px)`;
+  });
+  // destello central (eclipse)
+  const cDef=C.flares.center, maxE=Math.max(...projs.map(p=>p.rig.e));
+  const cm=(intro.on?smoothstep(.04,.4,ip):1)*(1-P.dimOthers*.5*maxE);
+  const cppw=centerScr.front?H/(2*centerScr.depth*tanH):0, coff=Math.max(Math.abs(centerScr.nx),Math.abs(centerScr.ny));
+  centerRig.update(cDef,{x:centerScr.x,y:centerScr.y,cx:W/2,cy:H/2,H,t,dt,ppw:cppw,ppw0,hover:hovered===-1?1:0,mult:cm,visible:centerScr.front&&coff<3,behind:true,
+    ghostVis:smoothstep(1.25,.85,coff)*(cDef.behavior.occlusion?1-cDef.behavior.occStrength*.6:1)});
+
+  // película
+  const fu=fin.uniforms; dustJump+=dt*Math.max(F.grainSpeed,0)/3;
+  if(F.grainSpeed>0) fu.uFrame.value=Math.floor(t*F.grainSpeed);
+  blotT+=F.blotchSpeed*dt; fu.uBlotT.value=blotT+(F.grainSpeed>0?Math.floor(t*F.grainSpeed)%7*.004:0);
+  if(dustJump>=1){ dustJump=0; fu.uDustOff.value.set(Math.random(),Math.random()); fu.uDustRot.value=Math.random()*6.283; }
+  fu.uGrain.value=F.grain; fu.uGrainSize.value=F.grainSize*renderer.getPixelRatio(); fu.uBlot.value=F.blotches; fu.uBlotScale.value=F.blotchScale; fu.uBlotC.value=F.blotchContrast;
+  fu.uDust.value=F.dust; fu.uVig.value=F.vignette; fu.uVigIrr.value=F.vignetteIrr; fu.uDirtI.value=F.dirt; fu.uHal.value=F.halation; fu.uHalCol.value.set(F.halationColor); fu.uCA.value=F.ca;
+
+  composer.render();
+  camera.rotateZ(-roll);
+}
+
+/* =====================================================================
+   PANEL DE AJUSTES (lil-gui)
+   ===================================================================== */
+const PALETTES=[
+  {a:'#f2dcff',b:'#d8c8ff',c:'#8e7dff'}, {a:'#ffe6cc',b:'#ffc79a',c:'#ff8f52'}, {a:'#e6f2ff',b:'#b2d4ff',c:'#5c8dff'},
+  {a:'#ffe2f0',b:'#ffa6cf',c:'#b0508a'}, {a:'#ffffff',b:'#efeaff',c:'#b4abff'}, {a:'#fff4dc',b:'#ffd9a0',c:'#c77dff'},
+];
+const NEBULAS=[
+  {base:'#211d35',c1:'#61306c',c2:'#ad5076',c3:'#edaaa0'}, {base:'#151a30',c1:'#2a3f7a',c2:'#5a6fd0',c3:'#cfe0ff'},
+  {base:'#1c1424',c1:'#5a2440',c2:'#b8484f',c3:'#ffc7a0'}, {base:'#191628',c1:'#3d2a6e',c2:'#8a4fb8',c3:'#f0c8ff'},
+  {base:'#120f18',c1:'#2a1a22',c2:'#6a2a30',c3:'#c08070'},
+];
+const rr=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)], chance=p=>Math.random()<p;
+function randomFlare(d,isC){
+  const P=pick(PALETTES), k=isC?1:.22;
+  d.core.on=isC?chance(.3):true; d.core.color=isC?P.a:pick(['#f4f0ff',P.a]); d.core.intensity=rr(.7,1.2); d.core.size=isC?rr(8,24):rr(4,8.5); d.core.length=1; d.core.thickness=1;
+  d.glow.on=isC?chance(.95):true; d.glow.color=isC?P.b:P.c; d.glow.intensity=isC?rr(.25,.6):rr(.14,.32); d.glow.size=isC?rr(40,110):rr(20,48); d.glow.length=1;
+  d.rays.on=chance(isC?.85:.3); Object.assign(d.rays,{color:P.a,intensity:rr(.3,.7),size:isC?rr(140,320):rr(22,60),length:1,thickness:1,count:Math.round(isC?rr(12,40):rr(6,18)),
+    lenRand:rr(.3,.8),angRand:rr(.5,1),widthMin:rr(.2,.6)*k,widthMax:rr(1.2,3.5)*k,tipSoft:rr(.6,1),rotSpeed:rr(-1.5,1.5),seed:Math.floor(Math.random()*1e6)});
+  d.anam.on=chance(isC?.6:.3); Object.assign(d.anam,{color:P.a,intensity:rr(.15,.45),size:1,length:isC?rr(200,700):rr(60,200),thickness:isC?rr(.4,1.2):rr(.2,.4),lines:pick([1,1,1,2,3]),height:rr(3,14)*(isC?1:.5),fade:rr(.7,2),rotation:0,rotSpeed:0});
+  d.cross.on=chance(isC?.25:.75); Object.assign(d.cross,{color:P.a,intensity:isC?rr(.2,.5):rr(.5,.9),size:1,length:1,lenH:isC?rr(120,400):rr(40,120),lenV:isC?rr(80,300):rr(40,130),thickness:isC?rr(.3,1):rr(.2,.45),rotation:pick([0,0,45,rr(-15,15)]),rotSpeed:0});
+  d.star.on=chance(isC?.3:.25); Object.assign(d.star,{color:P.a,intensity:rr(.15,.4),size:isC?rr(100,260):rr(14,40),length:1,thickness:rr(.2,.5),points:pick([4,5,6,8]),rotation:rr(0,90),rotSpeed:rr(-2,2)});
+  d.halo.on=chance(.33); Object.assign(d.halo,{color:P.b,intensity:rr(.1,.3),size:isC?rr(40,120):rr(8,24),length:1,thickness:isC?rr(.6,2.5):rr(.2,.6),chroma:rr(0,.025)});
+  d.ghosts.on=chance(isC?.3:.1); Object.assign(d.ghosts,{color:P.c,intensity:isC?rr(.1,.3):rr(.05,.15),count:Math.round(isC?rr(3,8):rr(2,5)),size:isC?rr(.03,.1):rr(.015,.04),spacing:rr(.25,.55),chroma:rr(.1,.5),thickness:rr(.2,.8),length:1,rotation:0,rotSpeed:0});
+  if(!d.rays.on&&!d.anam.on&&!d.cross.on&&!d.star.on) d[isC?'rays':'cross'].on=true;
+  d.chroma=rr(0,.04);
+  Object.assign(d.behavior,{flicker:pick(isC?['ninguno','respiración','respiración','ruido','estrobo']:['ninguno','ninguno','respiración','ruido']),flickerAmp:rr(.05,.25),flickerSpeed:rr(.3,2),
+    hoverGrow:isC?rr(.05,.3):rr(.2,.7),hoverStretch:isC?rr(.1,.5):rr(.3,1.2)});
+}
+function randomFlares(){ randomFlare(CONFIG.flares.center,true); randomFlare(CONFIG.flares.projects,false); CONFIG.flares.perProject.forEach(d=>randomFlare(d,false)); }
+function randomAll(){
+  randomFlares(); const C=CONFIG;
+  Object.assign(C.bg,pick(NEBULAS),{amount:rr(.6,1.1),width:rr(.8,1.4),dirAz:rr(-180,180),dirEl:rr(-40,30),dust:rr(.6,1.1),stars:rr(.2,.5)});
+  Object.assign(C.film,{grain:rr(.05,.12),blotches:rr(.3,.9),blotchScale:rr(1.4,3.5),vignetteIrr:rr(.3,.8),vignette:rr(1.2,1.9),halation:rr(.6,1.6)});
+  Object.assign(C.post,{exposure:rr(.78,1),bloomStrength:rr(.5,1.1),bloomRadius:rr(.45,.8)});
+  C.orbits.rings.forEach(r=>{ r.spin=rr(-2,2); r.speed=rr(-3,3); r.gaps=Math.round(rr(1,5)); r.wear=rr(.25,.65); });
+  Object.assign(C.sphere.veins,{intensity:rr(.35,.8),scale:rr(1.8,3.6)}); C.sphere.scan.on=chance(.8);
+  C.trails.count=Math.round(rr(0,5));
+}
+// "Boceto D" = valores originales del boceto aprobado (lo que difiere de los valores por defecto, que son "Steven 1")
+const BOCETO_D={flares:{center:{core:{on:false},rays:{on:true,intensity:.5,size:190,length:1,thickness:1,widthMin:.37},anam:{on:true},cross:{length:1},ghosts:{intensity:.22}}},
+  sphere:{radius:16,spin:2.86,veins:{intensity:.55,scale:2.6,speed:.03,octaves:5},fresnel:{intensity:.9,power:2.6},grid:{lon:18},nodes:{count:520,points:.7},scan:{speed:.35,width:.06,intensity:.6}},
+  orbits:{systemSpin:1.5,markerSpeed:1},projects:{labelSize:9,labelOpacity:.75,dimOthers:.6,hoverBoost:.8},bg:{starBright:1},film:{grain:.075,grainSize:1.3,blotches:.55},
+  trails:{count:2,speed:1,length:1},dust:{count:1600},post:{exposure:.85,bloomStrength:.7,bloomRadius:.6,bloomThreshold:.42}};
+// mezcla profunda (b encima de a) para construir presets sobre el boceto
+const merge=(a,b)=>{ if(Array.isArray(b)) return b.map((v,i)=>merge(a?.[i],v)); if(!b||typeof b!=='object') return b; const o={...(a&&typeof a==='object'?a:{})}; for(const k in b) o[k]=merge(o[k],b[k]); return o; };
+const FACTORY={
+  'Steven 1':{},
+  'Boceto D':BOCETO_D,
+  'Eclipse fuerte':merge(BOCETO_D,{flares:{center:{
+      core:{on:true,color:'#ffffff',intensity:1.2,size:20},
+      glow:{color:'#ffe2c8',intensity:.42,size:92},
+      rays:{color:'#ffeedd',intensity:.62,size:400,count:34,lenRand:.6,widthMin:.35,widthMax:2.8,tipSoft:.9,rotSpeed:.9,seed:23},
+      anam:{color:'#ffe8d0',intensity:.45,length:950,thickness:.9,lines:3,height:7,fade:1.4},
+      star:{on:true,color:'#fff2e6',intensity:.16,size:300,thickness:.2,points:6,rotSpeed:-1.5},
+      halo:{on:true,color:'#ffcfa8',intensity:.22,size:70,thickness:1.6,chroma:.018},
+      ghosts:{on:true,color:'#ffb488',intensity:.26,count:6,size:.07,spacing:.38,chroma:.45,thickness:.55},
+      chroma:.04, behavior:{flicker:'ruido',flickerSpeed:1.6,flickerAmp:.22,occStrength:1}}},
+    post:{exposure:.9,bloomStrength:.85,bloomRadius:.7,bloomThreshold:.4},
+    film:{halation:1.4,dirt:1.5,grain:.085},
+    bg:{c2:'#b8484f',c3:'#ffc7a0'}}),
+  'Mínimo':merge(BOCETO_D,{flares:{
+      center:{rays:{on:false},anam:{on:false},glow:{intensity:.14,size:44},behavior:{flicker:'ninguno'}},
+      projects:{glow:{intensity:.08},core:{intensity:.7,size:4.5},cross:{intensity:.28,lenH:34,lenV:38,thickness:.25}},
+      perProject:[0,1,2,3,4].map(()=>({glow:{intensity:.08},core:{intensity:.7,size:4.5},cross:{intensity:.28,lenH:34,lenV:38,thickness:.25}}))},
+    post:{exposure:.72,bloomStrength:.42},
+    bg:{amount:.5,stars:.22,starBright:.7},
+    film:{grain:.09,vignette:1.9,blotches:.7,dirt:.5,halation:.5},
+    trails:{count:0}, orbits:{amber:{opacity:.2}}}),
+};
+const LS_KEY='capilladelacruz.presets';
+const userPresets=()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}')||{}; }catch{ return {}; } };
+const saveUserPresets=o=>{ try{ localStorage.setItem(LS_KEY,JSON.stringify(o)); return true; }catch{ return false; } };
+function applyConfig(obj){ deepAssign(CONFIG,clone(DEFAULTS)); deepAssign(CONFIG,obj); refreshAll(); }
+function loadPreset(n){ const src=FACTORY[n]??userPresets()[n]; if(!src) return; applyConfig(src); toast('preset · '+n); }
+
+const gui=new GUI({container:guiWrap,title:'AJUSTES'});
+gui.onChange(()=>applyText());
+
+// ---- presets y archivo ----
+const fPre=gui.addFolder('PRESETS · ARCHIVO');
+const pst={sel:'Steven 1',name:'mi ajuste'};
+function buildPresetUI(){
+  fPre.controllersRecursive().forEach(c=>c.destroy());
+  const names=[...Object.keys(FACTORY),...Object.keys(userPresets()).filter(n=>!(n in FACTORY))];
+  if(!names.includes(pst.sel)) pst.sel='Steven 1';
+  fPre.add(pst,'sel',names).name('cargar preset').onChange(loadPreset);
+  fPre.add(pst,'name').name('nombre');
+  fPre.add({f(){ const n=(pst.name||'').trim(); if(!n) return toast('pon un nombre'); if(n in FACTORY) return toast('ese nombre es de fábrica');
+    const u=userPresets(); u[n]=clone(CONFIG); if(saveUserPresets(u)){ pst.sel=n; buildPresetUI(); toast('guardado · '+n); } else toast('no se pudo guardar'); }},'f').name('💾 guardar ajuste actual');
+  fPre.add({f(){ if(pst.sel in FACTORY) return toast('los de fábrica no se borran'); const u=userPresets(); delete u[pst.sel]; saveUserPresets(u); pst.sel='Steven 1'; buildPresetUI(); toast('borrado'); }},'f').name('✕ borrar preset seleccionado');
+  fPre.add({f(){ randomAll(); refreshAll(); toast('aleatorio'); }},'f').name('🎲 aleatorio (global)');
+  fPre.add({f:copyCfg},'f').name('copiar ajustes (JSON)');
+  fPre.add({f:openPaste},'f').name('pegar ajustes');
+  fPre.add({f(){ pst.sel='Steven 1'; applyConfig({}); toast('restablecido'); }},'f').name('↺ restablecer');
+}
+buildPresetUI();
+
+// ---- ★ destellos ----
+const fFl=gui.addFolder('★ DESTELLOS');
+fFl.add({f(){ randomFlares(); refreshAll(); }},'f').name('🎲 aleatorio (todos los destellos)');
+const NAMES={rays:'rayos (starburst)',anam:'anamórfico horizontal',cross:'cruz (vertical + horizontal)',star:'estrella de N puntas',halo:'halo / anillo',ghosts:'fantasmas de lente (pesado)',core:'núcleo (punto)',glow:'resplandor (glow)'};
+const ORDER=['rays','anam','cross','star','halo','ghosts','core','glow'];
+const SZ={core:[0,80,'tamaño (diámetro u)'],glow:[0,400,'tamaño (diámetro u)'],rays:[0,800,'tamaño (diámetro u)'],anam:[0,4,'tamaño (escala)'],cross:[0,4,'tamaño (escala)'],
+  star:[0,600,'tamaño (diámetro u)'],halo:[0,400,'tamaño (diámetro u)'],ghosts:[0,.4,'tamaño (× alto pantalla)']};
+const LN={core:[.2,4,'longitud (estirar en x)'],glow:[.2,4,'longitud (estirar en x)'],rays:[.1,3,'longitud de rayos ×'],anam:[0,2000,'largo (u)'],cross:[0,3,'longitud ×'],
+  star:[.1,3,'longitud de puntas ×'],halo:[.2,4,'longitud (elipse en x)'],ghosts:[0,2,'variación de tamaño']};
+const TH={core:[.2,5,'grosor (dureza)'],glow:[.2,5,'grosor (dureza)'],rays:[.1,5,'grosor ×'],anam:[.05,8,'grosor de línea (u)'],cross:[.05,6,'grosor (u)'],
+  star:[0,1,'grosor de puntas'],halo:[.05,20,'grosor del anillo (u)'],ghosts:[0,1,'grosor del borde']};
+function buildFlareGUI(f,def,isC){
+  f.add({f(){ randomFlare(def,isC); refreshAll(); }},'f').name('🎲 aleatorio');
+  const ft=f.addFolder('tipo · capas combinables');
+  ORDER.forEach(k=>ft.add(def[k],'on').name(NAMES[k]));
+  f.add(def,'chroma',0,.25,.001).name('dispersión cromática RGB');
+  ORDER.forEach(k=>{ const L=def[k], fo=f.addFolder(NAMES[k]).close();
+    fo.addColor(L,'color').name('color');
+    fo.add(L,'intensity',0,3,.01).name('intensidad');
+    fo.add(L,'size',SZ[k][0],SZ[k][1]).name(SZ[k][2]);
+    if(k!=='cross') fo.add(L,'length',LN[k][0],LN[k][1]).name(LN[k][2]);
+    fo.add(L,'thickness',TH[k][0],TH[k][1]).name(TH[k][2]);
+    fo.add(L,'rotation',-180,180,.1).name(k==='cross'?'inclinación (°)':k==='ghosts'?'rotación de la cadena (°)':'rotación (°)');
+    fo.add(L,'rotSpeed',-30,30,.01).name('vel. rotación (°/s)');
+    if(k==='rays'){ fo.add(L,'count',1,120,1).name('número de rayos'); fo.add(L,'lenRand',0,1,.01).name('aleatoriedad de longitud');
+      fo.add(L,'angRand',0,1,.01).name('aleatoriedad de ángulo'); fo.add(L,'widthMin',.02,8,.01).name('grosor mínimo (u)'); fo.add(L,'widthMax',.02,12,.01).name('grosor máximo (u)');
+      fo.add(L,'tipSoft',0,1,.01).name('suavidad de punta'); fo.add({f(){ L.seed=Math.floor(Math.random()*1e6); }},'f').name('↻ regenerar rayos'); }
+    if(k==='anam'){ fo.add(L,'lines',1,9,1).name('líneas paralelas'); fo.add(L,'height',0,80,.1).name('alto (separación u)'); fo.add(L,'fade',.2,5,.01).name('desvanecido'); }
+    if(k==='cross'){ fo.add(L,'length',0,3,.01).name('longitud ×'); fo.add(L,'lenH',0,1200,1).name('largo horizontal (u)'); fo.add(L,'lenV',0,1200,1).name('largo vertical (u)'); }
+    if(k==='star') fo.add(L,'points',[4,5,6,8]).name('puntas (diafragma)');
+    if(k==='halo') fo.add(L,'chroma',0,.3,.001).name('dispersión cromática');
+    if(k==='ghosts'){ fo.add(L,'count',0,12,1).name('número (pesado)'); fo.add(L,'spacing',.05,1,.01).name('espaciado'); fo.add(L,'chroma',0,1,.01).name('dispersión cromática'); }
+  });
+  const B=def.behavior, fb=f.addFolder('comportamiento').close();
+  fb.add(B,'flicker',['ninguno','respiración','ruido','estrobo']).name('parpadeo');
+  fb.add(B,'flickerSpeed',0,10,.01).name('parpadeo · velocidad'); fb.add(B,'flickerAmp',0,1,.01).name('parpadeo · amplitud');
+  fb.add(B,'hoverGrow',0,3,.01).name('hover · cuánto crece'); fb.add(B,'hoverStretch',0,4,.01).name('hover · alargar rayos'); fb.add(B,'hoverDur',.05,3,.01).name('hover · duración (s)');
+  fb.add(B,'occlusion').name(isC?'oclusión (eclipse)':'oclusión por la esfera'); fb.add(B,'occStrength',0,1,.01).name('oclusión · fuerza');
+  fb.add(B,'maxScale',1,10,.1).name('escala máx. al acercar');
+}
+const fCtr=fFl.addFolder('A · destello central (eclipse)');
+buildFlareGUI(fCtr,CONFIG.flares.center,true);
+const fPrj=fFl.addFolder('B · luces de los proyectos').close();
+fPrj.add(CONFIG.flares,'projectsMode',['todos','individual']).name('aplicar a').onChange(()=>rebuildProjFlareGUI());
+fPrj.add(CONFIG.flares,'projectsEdit',['01','02','03','04','05']).name('editar proyecto').onChange(()=>rebuildProjFlareGUI());
+fPrj.add({f(){ CONFIG.flares.perProject.forEach(d=>deepAssign(d,clone(CONFIG.flares.projects))); refreshAll(); toast('copiado a cada proyecto'); }},'f').name('copiar "todos" → cada proyecto');
+let projFlareFolder=null;
+function rebuildProjFlareGUI(){
+  if(projFlareFolder) projFlareFolder.destroy();
+  const ind=CONFIG.flares.projectsMode==='individual', i=parseInt(CONFIG.flares.projectsEdit,10)-1;
+  projFlareFolder=fPrj.addFolder(ind?`ajustes · proyecto ${CONFIG.flares.projectsEdit}`:'ajustes · todos los proyectos');
+  buildFlareGUI(projFlareFolder,ind?CONFIG.flares.perProject[i]:CONFIG.flares.projects,false);
+}
+rebuildProjFlareGUI();
+
+// ---- esfera ----
+{ const S=CONFIG.sphere, f=gui.addFolder('ESFERA CENTRAL').close();
+  f.add(S,'radius',4,60,.1).name('radio'); f.add(S,'spin',-30,30,.01).name('velocidad de giro (°/s)'); f.addColor(S,'color').name('color');
+  f.add(S,'opacity',0,1,.01).name('opacidad (0 fantasma · 1 opaca)');
+  const v=f.addFolder('venas (pesado)').close(); v.add(S.veins,'intensity',0,2,.01).name('intensidad'); v.add(S.veins,'scale',.5,8,.01).name('escala');
+  v.add(S.veins,'speed',0,.3,.001).name('velocidad'); v.add(S.veins,'octaves',1,6,1).name('finura (octavas, pesado)');
+  const fr=f.addFolder('fresnel / borde').close(); fr.add(S.fresnel,'intensity',0,3,.01).name('intensidad'); fr.add(S.fresnel,'power',.5,8,.01).name('dureza del borde');
+  const g=f.addFolder('retícula').close(); g.add(S.grid,'lon',0,64,1).name('densidad · meridianos'); g.add(S.grid,'lat',0,48,1).name('densidad · paralelos'); g.add(S.grid,'opacity',0,1,.01).name('opacidad');
+  const n=f.addFolder('red de nodos (pesado)').close(); n.add(S.nodes,'count',0,2000,1).name('número de nodos'); n.add(S.nodes,'dist',.5,10,.01).name('distancia de conexión');
+  n.add(S.nodes,'links',1,6,1).name('enlaces por nodo'); n.add(S.nodes,'density',0,1,.01).name('proporción conectada'); n.add(S.nodes,'opacity',0,1,.01).name('opacidad de la red'); n.add(S.nodes,'points',0,1,.01).name('opacidad de los puntos');
+  const sc=f.addFolder('línea de escaneo').close(); sc.add(S.scan,'on').name('activa'); sc.add(S.scan,'speed',0,3,.01).name('velocidad'); sc.add(S.scan,'width',.005,.3,.001).name('grosor');
+  sc.add(S.scan,'intensity',0,2,.01).name('intensidad'); sc.addColor(S.scan,'color').name('color');
+  const h=f.addFolder('puntos calientes').close(); h.add(S.hot,'count',0,30,1).name('número'); h.addColor(S.hot,'color').name('color'); h.add(S.hot,'pulse',0,3,.01).name('frecuencia del pulso'); h.add(S.hot,'size',0,8,.01).name('tamaño');
+  const b=f.addFolder('arcos-soporte').close(); b.add(S.brackets,'on').name('visibles'); b.add(S.brackets,'ticks').name('graduación'); b.add(S.brackets,'opacity',0,2,.01).name('opacidad'); b.add(S.brackets,'spin',-20,20,.01).name('giro (°/s)');
+}
+// ---- órbitas ----
+{ const O=CONFIG.orbits, f=gui.addFolder('ÓRBITAS').close();
+  f.add(O,'systemSpinOn').name('girar todo el conjunto (eje vertical)'); f.add(O,'systemSpin',-20,20,.01).name('giro del conjunto (°/s)');
+  f.addColor(O,'color').name('color de las líneas'); f.add(O,'markers').name('marcadores viajeros'); f.add(O,'markerSpeed',0,5,.01).name('vel. marcadores ×');
+  const a=f.addFolder('líneas ámbar centro–proyecto').close(); a.add(O.amber,'on').name('visibles'); a.add(O.amber,'dashed').name('punteado'); a.add(O.amber,'opacity',0,1.5,.01).name('opacidad'); a.addColor(O.amber,'color').name('color');
+  O.rings.forEach((r,i)=>{ const fr=f.addFolder(`anillo 0${i+1}`).close();
+    fr.add(r,'radius',30,320,.1).name('radio'); fr.add(r,'tiltX',-90,90,.01).name('inclinación x (°)'); fr.add(r,'tiltZ',-180,180,.01).name('inclinación z (°)');
+    fr.add(r,'spin',-20,20,.01).name('giro del anillo (°/s)'); fr.add(r,'speed',-20,20,.01).name('velocidad del proyecto (°/s)'); fr.add(r,'opacity',0,1.5,.01).name('opacidad');
+    fr.add(r,'gaps',0,10,1).name('huecos'); fr.add(r,'wear',0,1,.01).name('desgaste'); fr.add(r,'double').name('doble trazo');
+    fr.add(r,'ticks').name('graduaciones'); fr.add(r,'tickDensity',.5,15,.1).name('graduación · paso (°)'); });
+}
+// ---- proyectos ----
+{ const P=CONFIG.projects, f=gui.addFolder('PROYECTOS').close();
+  f.add(P,'labels',['siempre','hover','nunca']).name('etiqueta visible'); f.add(P,'labelSize',6,20,.5).name('tamaño de etiqueta'); f.add(P,'labelOpacity',0,1,.01).name('opacidad de etiqueta');
+  f.add(P,'hoverBoost',0,3,.01).name('hover · intensificar'); f.add(P,'dimOthers',0,1,.01).name('hover · bajar el resto'); f.add(P,'ringGlow',0,6,.01).name('hover · brillo del anillo');
+  f.add(P,'amberDot').name('punto ámbar');
+  P.list.forEach((p,i)=>f.add(p,'name').name(`nombre 0${i+1}`));
+}
+// ---- fondo ----
+{ const B=CONFIG.bg, f=gui.addFolder('FONDO / NEBULOSA').close();
+  f.addColor(B,'base').name('color base'); f.addColor(B,'c1').name('nebulosa · tono 1'); f.addColor(B,'c2').name('nebulosa · tono 2'); f.addColor(B,'c3').name('nebulosa · tono 3');
+  f.add(B,'dirAz',-180,180,.1).name('dirección · azimut (°)'); f.add(B,'dirEl',-90,90,.1).name('dirección · altura (°)'); f.add(B,'width',.2,3,.01).name('anchura');
+  f.add(B,'amount',0,2,.01).name('cantidad'); f.add(B,'scale',.3,5,.01).name('escala'); f.add(B,'dust',0,1.5,.01).name('polvo oscuro');
+  f.add(B,'stars',0,1,.01).name('número de estrellas'); f.add(B,'starBright',0,4,.01).name('brillo de estrellas'); f.add(B,'drift',0,.05,.0001).name('velocidad de la deriva');
+}
+// ---- película ----
+{ const F=CONFIG.film, f=gui.addFolder('TEXTURA DE PELÍCULA').close();
+  f.add(F,'grain',0,.35,.001).name('grano · cantidad'); f.add(F,'grainSize',.5,5,.01).name('grano · tamaño'); f.add(F,'grainSpeed',0,60,1).name('grano · velocidad (hervor)');
+  f.add(F,'blotches',0,1.5,.01).name('manchas · cantidad'); f.add(F,'blotchScale',.3,10,.01).name('manchas · escala'); f.add(F,'blotchContrast',0,3,.01).name('manchas · contraste'); f.add(F,'blotchSpeed',0,1,.001).name('manchas · deriva');
+  f.add(F,'dust',0,2,.01).name('polvo / pelusas'); f.add(F,'vignette',0,3,.01).name('viñeta · fuerza'); f.add(F,'vignetteIrr',0,1.5,.01).name('viñeta · irregularidad');
+  f.add(F,'dirt',0,4,.01).name('suciedad de lente'); f.add(F,'halation',0,4,.01).name('halación · intensidad (pesado)'); f.addColor(F,'halationColor').name('halación · color');
+  f.add(F,'ca',0,.12,.001).name('aberración cromática');
+}
+// ---- estelas y polvo ----
+{ const f=gui.addFolder('ESTELAS Y POLVO').close(), Tr=CONFIG.trails, D=CONFIG.dust;
+  f.add(Tr,'count',0,20,1).name('estelas · número'); f.addColor(Tr,'color').name('estelas · color'); f.add(Tr,'speed',0,4,.01).name('estelas · velocidad'); f.add(Tr,'length',.1,3,.01).name('estelas · longitud');
+  f.add(D,'count',0,6000,10).name('polvo · cantidad'); f.add(D,'size',.2,4,.01).name('polvo · tamaño'); f.add(D,'bright',0,3,.01).name('polvo · brillo');
+}
+// ---- cámara ----
+{ const Cm=CONFIG.camera, f=gui.addFolder('CÁMARA Y MOVIMIENTO').close();
+  f.add(Cm,'fov',15,100,.1).name('FOV'); f.add(Cm,'roll',-30,30,.1).name('inclinación / roll (°)');
+  f.add(Cm,'autoRotate').name('giro automático').onChange(()=>{ autoPaused=false; }); f.add(Cm,'autoSpeed',-2,2,.01).name('giro automático · velocidad');
+  f.add(Cm,'damping',.005,.3,.001).name('amortiguación'); f.add(Cm,'minDist',2,200,.1).name('zoom mínimo'); f.add(Cm,'maxDist',100,4000,1).name('zoom máximo');
+  f.add(Cm,'introDur',1,20,.1).name('duración de la intro (s)'); f.add(Cm,'travelDur',.3,8,.01).name('duración de los viajes (s)');
+  f.add({f:startIntro},'f').name('▶ repetir intro'); f.add({f:goOverview},'f').name('◎ vista general');
+  f.add({f(){ CONFIG.camera.home=camera.position.toArray().map(v=>+v.toFixed(2)); HOME.fromArray(CONFIG.camera.home); toast('vista general fijada'); }},'f').name('fijar vista actual como general');
+}
+// ---- post ----
+{ const P=CONFIG.post, f=gui.addFolder('POSTPROCESADO').close();
+  f.add(P,'exposure',0,3,.01).name('exposición'); f.add(P,'bloomStrength',0,3,.01).name('bloom · fuerza'); f.add(P,'bloomRadius',0,1.5,.01).name('bloom · radio'); f.add(P,'bloomThreshold',0,1,.01).name('bloom · umbral');
+  f.add(P,'toneMapping',Object.keys(TONE)).name('tone mapping');
+}
+// ---- texto ----
+{ const Tx=CONFIG.text, f=gui.addFolder('TEXTO').close();
+  f.add(Tx,'position',['abajo-derecha','abajo-izquierda','centro']).name('posición'); f.add(Tx,'size',8,40,.5).name('tamaño');
+  f.add(Tx,'spacing',0,1.5,.01).name('espaciado de letras'); f.add(Tx,'opacity',0,1,.01).name('opacidad'); f.add(Tx,'glow',0,2,.01).name('brillo');
+}
+gui.add({f(){ document.body.classList.add('clean'); toast('pulsa H para volver'); }},'f').name('ocultar interfaz (H)');
+
+function refreshAll(){ gui.controllersRecursive().forEach(c=>c.updateDisplay()); rebuildProjFlareGUI(); applyText(); autoPaused=false; HOME.fromArray(CONFIG.camera.home); }
+
+// ---- copiar / pegar ----
+async function copyCfg(){ const s=JSON.stringify(CONFIG,null,2);
+  try{ await navigator.clipboard.writeText(s); toast('copiado'); }
+  catch{ const ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('copiado'); }catch{ toast('no se pudo copiar'); } ta.remove(); } }
+const pasteEl=document.getElementById('paste'), pasteTa=document.getElementById('pasteTa');
+function openPaste(){ pasteTa.value=''; pasteEl.classList.add('on'); setTimeout(()=>pasteTa.focus(),30); }
+document.getElementById('pasteCancel').addEventListener('click',()=>pasteEl.classList.remove('on'));
+document.getElementById('pasteOk').addEventListener('click',()=>{ try{ const o=JSON.parse(pasteTa.value); applyConfig(o); pasteEl.classList.remove('on'); toast('ajustes aplicados'); }catch{ toast('JSON no válido'); } });
+
+/* ======== arranque ======== */
+addEventListener('resize',()=>{ W=innerWidth; H=innerHeight; camera.aspect=W/H; camera.updateProjectionMatrix(); renderer.setSize(W,H); composer.setSize(W,H);
+  flareCam.right=W; flareCam.top=H; flareCam.updateProjectionMatrix(); fin.uniforms.uRes.value.set(W,H); });
+startIntro();
+loop();
+</script>
+</body>
+</html>

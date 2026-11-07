@@ -1,0 +1,1016 @@
+{
+  "flares": {
+    "center": {
+      "core": {
+        "on": true,
+        "color": "#ffffff",
+        "intensity": 0.9,
+        "size": 14,
+        "length": 1,
+        "thickness": 1,
+        "rotation": 0,
+        "rotSpeed": 0
+      },
+      "glow": {
+        "on": true,
+        "color": "#d8c8ff",
+        "intensity": 0.45,
+        "size": 62,
+        "length": 1,
+        "thickness": 1,
+        "rotation": 0,
+        "rotSpeed": 0
+      },
+      "rays": {
+        "on": false,
+        "color": "#f2dcff",
+        "intensity": 1.18,
+        "size": 323.2,
+        "length": 1.3833,
+        "thickness": 1.1074,
+        "rotation": 0,
+        "rotSpeed": 0.57,
+        "count": 22,
+        "lenRand": 0.64,
+        "angRand": 1,
+        "widthMin": 0.98,
+        "widthMax": 2.2,
+        "tipSoft": 1,
+        "seed": 7
+      },
+      "anam": {
+        "on": false,
+        "color": "#f0e8ff",
+        "intensity": 0.32,
+        "size": 1,
+        "length": 300,
+        "thickness": 0.62,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "lines": 1,
+        "height": 6,
+        "fade": 1
+      },
+      "cross": {
+        "on": false,
+        "color": "#f4f0ff",
+        "intensity": 0.4,
+        "size": 1,
+        "length": 0.67,
+        "thickness": 0.5,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "lenH": 220,
+        "lenV": 160
+      },
+      "star": {
+        "on": false,
+        "color": "#e8e0ff",
+        "intensity": 0.35,
+        "size": 150,
+        "length": 1,
+        "thickness": 0.35,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "points": 6
+      },
+      "halo": {
+        "on": false,
+        "color": "#cbb8ff",
+        "intensity": 0.25,
+        "size": 64,
+        "length": 1,
+        "thickness": 1.2,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "chroma": 0.03
+      },
+      "ghosts": {
+        "on": false,
+        "color": "#b9a8ff",
+        "intensity": 1.61,
+        "size": 0.07,
+        "length": 1,
+        "thickness": 0.5,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "count": 5,
+        "spacing": 0.42,
+        "chroma": 0.25
+      },
+      "chroma": 0.015,
+      "behavior": {
+        "flicker": "respiración",
+        "flickerSpeed": 0.7,
+        "flickerAmp": 0.13,
+        "hoverGrow": 0.12,
+        "hoverStretch": 0.3,
+        "hoverDur": 0.6,
+        "occlusion": true,
+        "occStrength": 1,
+        "maxScale": 4
+      }
+    },
+    "projectsMode": "todos",
+    "projectsEdit": "01",
+    "projects": {
+      "core": {
+        "on": true,
+        "color": "#f4f0ff",
+        "intensity": 0.95,
+        "size": 6,
+        "length": 1,
+        "thickness": 1,
+        "rotation": 0,
+        "rotSpeed": 0
+      },
+      "glow": {
+        "on": true,
+        "color": "#8e7dff",
+        "intensity": 0.22,
+        "size": 34,
+        "length": 1,
+        "thickness": 1,
+        "rotation": 0,
+        "rotSpeed": 0
+      },
+      "rays": {
+        "on": false,
+        "color": "#eae6ff",
+        "intensity": 0.35,
+        "size": 40,
+        "length": 1,
+        "thickness": 1,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "count": 14,
+        "lenRand": 0.64,
+        "angRand": 1,
+        "widthMin": 0.08,
+        "widthMax": 0.35,
+        "tipSoft": 1,
+        "seed": 7
+      },
+      "anam": {
+        "on": false,
+        "color": "#eae6ff",
+        "intensity": 0.3,
+        "size": 1,
+        "length": 90,
+        "thickness": 0.3,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "lines": 1,
+        "height": 6,
+        "fade": 1
+      },
+      "cross": {
+        "on": true,
+        "color": "#eae6ff",
+        "intensity": 0.72,
+        "size": 1,
+        "length": 1,
+        "thickness": 0.31,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "lenH": 75,
+        "lenV": 85
+      },
+      "star": {
+        "on": false,
+        "color": "#eae6ff",
+        "intensity": 0.4,
+        "size": 22,
+        "length": 1,
+        "thickness": 0.3,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "points": 4
+      },
+      "halo": {
+        "on": false,
+        "color": "#b9a8ff",
+        "intensity": 0.3,
+        "size": 14,
+        "length": 1,
+        "thickness": 0.35,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "chroma": 0.03
+      },
+      "ghosts": {
+        "on": false,
+        "color": "#b9a8ff",
+        "intensity": 0.12,
+        "size": 0.03,
+        "length": 1,
+        "thickness": 0.4,
+        "rotation": 0,
+        "rotSpeed": 0,
+        "count": 5,
+        "spacing": 0.42,
+        "chroma": 0.25
+      },
+      "chroma": 0.01,
+      "behavior": {
+        "flicker": "ninguno",
+        "flickerSpeed": 1.2,
+        "flickerAmp": 0.1,
+        "hoverGrow": 0.45,
+        "hoverStretch": 0.7,
+        "hoverDur": 0.35,
+        "occlusion": true,
+        "occStrength": 1,
+        "maxScale": 3
+      }
+    },
+    "perProject": [
+      {
+        "core": {
+          "on": true,
+          "color": "#f4f0ff",
+          "intensity": 0.95,
+          "size": 6,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "glow": {
+          "on": true,
+          "color": "#8e7dff",
+          "intensity": 0.22,
+          "size": 34,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "rays": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.35,
+          "size": 40,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 14,
+          "lenRand": 0.64,
+          "angRand": 1,
+          "widthMin": 0.08,
+          "widthMax": 0.35,
+          "tipSoft": 1,
+          "seed": 7
+        },
+        "anam": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.3,
+          "size": 1,
+          "length": 90,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lines": 1,
+          "height": 6,
+          "fade": 1
+        },
+        "cross": {
+          "on": true,
+          "color": "#eae6ff",
+          "intensity": 0.72,
+          "size": 1,
+          "length": 1,
+          "thickness": 0.31,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lenH": 80,
+          "lenV": 73
+        },
+        "star": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.4,
+          "size": 22,
+          "length": 1,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "points": 4
+        },
+        "halo": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.3,
+          "size": 14,
+          "length": 1,
+          "thickness": 0.35,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "chroma": 0.03
+        },
+        "ghosts": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.12,
+          "size": 0.03,
+          "length": 1,
+          "thickness": 0.4,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 5,
+          "spacing": 0.42,
+          "chroma": 0.25
+        },
+        "chroma": 0.01,
+        "behavior": {
+          "flicker": "ninguno",
+          "flickerSpeed": 1.2,
+          "flickerAmp": 0.1,
+          "hoverGrow": 0.45,
+          "hoverStretch": 0.7,
+          "hoverDur": 0.35,
+          "occlusion": true,
+          "occStrength": 1,
+          "maxScale": 3
+        }
+      },
+      {
+        "core": {
+          "on": true,
+          "color": "#f4f0ff",
+          "intensity": 0.95,
+          "size": 6,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "glow": {
+          "on": true,
+          "color": "#8e7dff",
+          "intensity": 0.22,
+          "size": 34,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "rays": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.35,
+          "size": 40,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 14,
+          "lenRand": 0.64,
+          "angRand": 1,
+          "widthMin": 0.08,
+          "widthMax": 0.35,
+          "tipSoft": 1,
+          "seed": 7
+        },
+        "anam": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.3,
+          "size": 1,
+          "length": 90,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lines": 1,
+          "height": 6,
+          "fade": 1
+        },
+        "cross": {
+          "on": true,
+          "color": "#eae6ff",
+          "intensity": 0.72,
+          "size": 1,
+          "length": 1,
+          "thickness": 0.31,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lenH": 73,
+          "lenV": 87
+        },
+        "star": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.4,
+          "size": 22,
+          "length": 1,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "points": 4
+        },
+        "halo": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.3,
+          "size": 14,
+          "length": 1,
+          "thickness": 0.35,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "chroma": 0.03
+        },
+        "ghosts": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.12,
+          "size": 0.03,
+          "length": 1,
+          "thickness": 0.4,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 5,
+          "spacing": 0.42,
+          "chroma": 0.25
+        },
+        "chroma": 0.01,
+        "behavior": {
+          "flicker": "ninguno",
+          "flickerSpeed": 1.2,
+          "flickerAmp": 0.1,
+          "hoverGrow": 0.45,
+          "hoverStretch": 0.7,
+          "hoverDur": 0.35,
+          "occlusion": true,
+          "occStrength": 1,
+          "maxScale": 3
+        }
+      },
+      {
+        "core": {
+          "on": true,
+          "color": "#f4f0ff",
+          "intensity": 0.95,
+          "size": 6,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "glow": {
+          "on": true,
+          "color": "#8e7dff",
+          "intensity": 0.22,
+          "size": 34,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "rays": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.35,
+          "size": 40,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 14,
+          "lenRand": 0.64,
+          "angRand": 1,
+          "widthMin": 0.08,
+          "widthMax": 0.35,
+          "tipSoft": 1,
+          "seed": 7
+        },
+        "anam": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.3,
+          "size": 1,
+          "length": 90,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lines": 1,
+          "height": 6,
+          "fade": 1
+        },
+        "cross": {
+          "on": true,
+          "color": "#eae6ff",
+          "intensity": 0.72,
+          "size": 1,
+          "length": 1,
+          "thickness": 0.31,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lenH": 63,
+          "lenV": 79
+        },
+        "star": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.4,
+          "size": 22,
+          "length": 1,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "points": 4
+        },
+        "halo": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.3,
+          "size": 14,
+          "length": 1,
+          "thickness": 0.35,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "chroma": 0.03
+        },
+        "ghosts": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.12,
+          "size": 0.03,
+          "length": 1,
+          "thickness": 0.4,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 5,
+          "spacing": 0.42,
+          "chroma": 0.25
+        },
+        "chroma": 0.01,
+        "behavior": {
+          "flicker": "ninguno",
+          "flickerSpeed": 1.2,
+          "flickerAmp": 0.1,
+          "hoverGrow": 0.45,
+          "hoverStretch": 0.7,
+          "hoverDur": 0.35,
+          "occlusion": true,
+          "occStrength": 1,
+          "maxScale": 3
+        }
+      },
+      {
+        "core": {
+          "on": true,
+          "color": "#f4f0ff",
+          "intensity": 0.95,
+          "size": 6,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "glow": {
+          "on": true,
+          "color": "#8e7dff",
+          "intensity": 0.22,
+          "size": 34,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "rays": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.35,
+          "size": 40,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 14,
+          "lenRand": 0.64,
+          "angRand": 1,
+          "widthMin": 0.08,
+          "widthMax": 0.35,
+          "tipSoft": 1,
+          "seed": 7
+        },
+        "anam": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.3,
+          "size": 1,
+          "length": 90,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lines": 1,
+          "height": 6,
+          "fade": 1
+        },
+        "cross": {
+          "on": true,
+          "color": "#eae6ff",
+          "intensity": 0.72,
+          "size": 1,
+          "length": 1,
+          "thickness": 0.31,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lenH": 75,
+          "lenV": 100
+        },
+        "star": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.4,
+          "size": 22,
+          "length": 1,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "points": 4
+        },
+        "halo": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.3,
+          "size": 14,
+          "length": 1,
+          "thickness": 0.35,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "chroma": 0.03
+        },
+        "ghosts": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.12,
+          "size": 0.03,
+          "length": 1,
+          "thickness": 0.4,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 5,
+          "spacing": 0.42,
+          "chroma": 0.25
+        },
+        "chroma": 0.01,
+        "behavior": {
+          "flicker": "ninguno",
+          "flickerSpeed": 1.2,
+          "flickerAmp": 0.1,
+          "hoverGrow": 0.45,
+          "hoverStretch": 0.7,
+          "hoverDur": 0.35,
+          "occlusion": true,
+          "occStrength": 1,
+          "maxScale": 3
+        }
+      },
+      {
+        "core": {
+          "on": true,
+          "color": "#f4f0ff",
+          "intensity": 0.95,
+          "size": 6,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "glow": {
+          "on": true,
+          "color": "#8e7dff",
+          "intensity": 0.22,
+          "size": 34,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0
+        },
+        "rays": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.35,
+          "size": 40,
+          "length": 1,
+          "thickness": 1,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 14,
+          "lenRand": 0.64,
+          "angRand": 1,
+          "widthMin": 0.08,
+          "widthMax": 0.35,
+          "tipSoft": 1,
+          "seed": 7
+        },
+        "anam": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.3,
+          "size": 1,
+          "length": 90,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lines": 1,
+          "height": 6,
+          "fade": 1
+        },
+        "cross": {
+          "on": true,
+          "color": "#eae6ff",
+          "intensity": 0.72,
+          "size": 1,
+          "length": 1,
+          "thickness": 0.31,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "lenH": 82,
+          "lenV": 79
+        },
+        "star": {
+          "on": false,
+          "color": "#eae6ff",
+          "intensity": 0.4,
+          "size": 22,
+          "length": 1,
+          "thickness": 0.3,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "points": 4
+        },
+        "halo": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.3,
+          "size": 14,
+          "length": 1,
+          "thickness": 0.35,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "chroma": 0.03
+        },
+        "ghosts": {
+          "on": false,
+          "color": "#b9a8ff",
+          "intensity": 0.12,
+          "size": 0.03,
+          "length": 1,
+          "thickness": 0.4,
+          "rotation": 0,
+          "rotSpeed": 0,
+          "count": 5,
+          "spacing": 0.42,
+          "chroma": 0.25
+        },
+        "chroma": 0.01,
+        "behavior": {
+          "flicker": "ninguno",
+          "flickerSpeed": 1.2,
+          "flickerAmp": 0.1,
+          "hoverGrow": 0.45,
+          "hoverStretch": 0.7,
+          "hoverDur": 0.35,
+          "occlusion": true,
+          "occStrength": 1,
+          "maxScale": 3
+        }
+      }
+    ]
+  },
+  "sphere": {
+    "radius": 10.5,
+    "spin": -13.07,
+    "color": "#ced4ff",
+    "opacity": 1,
+    "veins": {
+      "intensity": 0.91,
+      "scale": 2.07,
+      "speed": 0.12,
+      "octaves": 4
+    },
+    "fresnel": {
+      "intensity": 1.96,
+      "power": 1.86
+    },
+    "grid": {
+      "lon": 16,
+      "lat": 12,
+      "opacity": 0.12
+    },
+    "nodes": {
+      "count": 545,
+      "dist": 3.4,
+      "links": 2,
+      "density": 0.55,
+      "opacity": 0.35,
+      "points": 0
+    },
+    "scan": {
+      "on": true,
+      "speed": 1.34,
+      "width": 0.059,
+      "intensity": 0.53,
+      "color": "#f3edff"
+    },
+    "hot": {
+      "count": 7,
+      "color": "#ff9a4a",
+      "pulse": 0.5,
+      "size": 2.4
+    },
+    "brackets": {
+      "on": true,
+      "ticks": true,
+      "opacity": 1,
+      "spin": -1.15
+    }
+  },
+  "orbits": {
+    "rings": [
+      {
+        "radius": 116.2,
+        "tiltX": 48.77,
+        "tiltZ": -16.03,
+        "phase": -45.92,
+        "spin": 1.1,
+        "speed": 1.6,
+        "opacity": 0.42,
+        "gaps": 3,
+        "wear": 0.45,
+        "double": true,
+        "ticks": false,
+        "tickDensity": 3
+      },
+      {
+        "radius": 116.1,
+        "tiltX": -67.41,
+        "tiltZ": -151.32,
+        "phase": -42.26,
+        "spin": -0.7,
+        "speed": 1.2,
+        "opacity": 0.42,
+        "gaps": 3,
+        "wear": 0.45,
+        "double": true,
+        "ticks": true,
+        "tickDensity": 3
+      },
+      {
+        "radius": 108.3,
+        "tiltX": -25.35,
+        "tiltZ": 90,
+        "phase": 103.89,
+        "spin": 0.9,
+        "speed": -1.4,
+        "opacity": 0.42,
+        "gaps": 3,
+        "wear": 0.45,
+        "double": true,
+        "ticks": false,
+        "tickDensity": 3
+      },
+      {
+        "radius": 124.5,
+        "tiltX": 45.51,
+        "tiltZ": 111.82,
+        "phase": 77.08,
+        "spin": -1.2,
+        "speed": 1,
+        "opacity": 0.42,
+        "gaps": 3,
+        "wear": 0.45,
+        "double": true,
+        "ticks": true,
+        "tickDensity": 3
+      },
+      {
+        "radius": 127.4,
+        "tiltX": 9.76,
+        "tiltZ": -98.33,
+        "phase": -72.92,
+        "spin": 0.6,
+        "speed": -0.9,
+        "opacity": 0.42,
+        "gaps": 3,
+        "wear": 0.45,
+        "double": true,
+        "ticks": false,
+        "tickDensity": 3
+      }
+    ],
+    "systemSpinOn": false,
+    "systemSpin": 0.04,
+    "color": "#b4b6e6",
+    "markers": true,
+    "markerSpeed": 1.06,
+    "amber": {
+      "on": true,
+      "dashed": true,
+      "opacity": 0.35,
+      "color": "#ff9a4a"
+    }
+  },
+  "projects": {
+    "list": [
+      {
+        "name": "PROYECTO"
+      },
+      {
+        "name": "PROYECTO"
+      },
+      {
+        "name": "PROYECTO"
+      },
+      {
+        "name": "PROYECTO"
+      },
+      {
+        "name": "PROYECTO"
+      }
+    ],
+    "labels": "siempre",
+    "labelSize": 7,
+    "labelOpacity": 0.23,
+    "dimOthers": 0.45,
+    "hoverBoost": 0.37,
+    "ringGlow": 2.5,
+    "amberDot": true
+  },
+  "bg": {
+    "base": "#211d35",
+    "c1": "#61306c",
+    "c2": "#ad5076",
+    "c3": "#edaaa0",
+    "dirAz": -139.4,
+    "dirEl": -18,
+    "width": 1,
+    "amount": 0.85,
+    "scale": 1.5,
+    "dust": 1,
+    "stars": 0.35,
+    "starBright": 0,
+    "drift": 0.004
+  },
+  "film": {
+    "grain": 0.044,
+    "grainSize": 0.9,
+    "grainSpeed": 24,
+    "blotches": 0.75,
+    "blotchScale": 2.2,
+    "blotchContrast": 1,
+    "blotchSpeed": 0.05,
+    "dust": 0.6,
+    "vignette": 1.45,
+    "vignetteIrr": 0.55,
+    "dirt": 1,
+    "halation": 1,
+    "halationColor": "#ffc4cb",
+    "ca": 0.02
+  },
+  "trails": {
+    "count": 16,
+    "color": "#ffd7a0",
+    "speed": 1.09,
+    "length": 0.1
+  },
+  "dust": {
+    "count": 700,
+    "size": 1,
+    "bright": 1
+  },
+  "camera": {
+    "fov": 40,
+    "roll": -6.9,
+    "autoRotate": true,
+    "autoSpeed": 0.18,
+    "damping": 0.05,
+    "minDist": 20,
+    "maxDist": 1600,
+    "introDur": 6,
+    "travelDur": 2.2,
+    "home": [
+      230,
+      135,
+      185
+    ]
+  },
+  "post": {
+    "exposure": 0.3,
+    "bloomStrength": 0.79,
+    "bloomRadius": 0.75,
+    "bloomThreshold": 0.69,
+    "toneMapping": "ACES"
+  },
+  "text": {
+    "position": "abajo-derecha",
+    "size": 14,
+    "spacing": 0.62,
+    "opacity": 1,
+    "glow": 0.7
+  }
+}
