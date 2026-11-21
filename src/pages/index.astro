@@ -1,5 +1,4 @@
 ---
-import ParticleSpheres from '../components/ParticleSpheres.astro';
 ---
 <html lang="es">
   <head>
@@ -7,6 +6,9 @@ import ParticleSpheres from '../components/ParticleSpheres.astro';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>capilladelacruz</title>
     <meta name="theme-color" content="#000000" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;400&display=swap" rel="stylesheet" />
   </head>
   <body>
     <video id="logo" src="/logo.mp4" muted playsinline preload="auto"></video>
@@ -14,9 +16,12 @@ import ParticleSpheres from '../components/ParticleSpheres.astro';
     <button id="start">start</button>
     <button id="sonido">sonido on</button>
     <div id="flash"></div>
-    <section id="final">
-      <ParticleSpheres />
-      <a href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">capilladelacruz</a>
+    <section id="final" lang="en">
+      <div id="countdown" role="timer" aria-label="seconds left"></div>
+      <div class="pie">
+        <span class="unidad">seconds</span>
+        <a class="cdlc-shine" href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">CAPILLADELACRUZ</a>
+      </div>
     </section>
 
     <script>
@@ -26,6 +31,33 @@ import ParticleSpheres from '../components/ParticleSpheres.astro';
       const sonido = document.getElementById('sonido')!;
       const flash = document.getElementById('flash')!;
       const final = document.getElementById('final')!;
+      const countdown = document.getElementById('countdown')!;
+
+      // Cuenta atrás: 20 dic 2026, 23:59 hora de Ginebra. Siempre desde Date.now().
+      const TARGET = Date.parse('2026-12-20T23:59:00+01:00');
+      let ultimoMinutoAria = -1;
+      const restantes = () => Math.max(0, Math.floor((TARGET - Date.now()) / 1000));
+      const agrupar = (n: number) => {
+        const grupos = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').split(' ');
+        return grupos.map((g, i) => (i ? `<span class="g">${g}</span>` : g)).join('');
+      };
+      const pintar = () => {
+        const s = restantes();
+        countdown.innerHTML = agrupar(s);
+        const minuto = Math.floor(Date.now() / 60000);
+        if (minuto !== ultimoMinutoAria || s === 0) {
+          ultimoMinutoAria = minuto;
+          countdown.setAttribute('aria-label', `${s} seconds left`);
+        }
+      };
+      pintar();
+      setTimeout(() => {
+        pintar();
+        setInterval(pintar, 1000);
+      }, 1000 - (Date.now() % 1000));
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) pintar();
+      });
 
       start.addEventListener('click', () => {
         video.play();
@@ -59,7 +91,6 @@ import ParticleSpheres from '../components/ParticleSpheres.astro';
           video.style.display = 'none';
           final.classList.add('dentro');
           flash.classList.remove('on');
-          window.dispatchEvent(new CustomEvent('capilla:final'));
         }, 1500);
       });
     </script>
@@ -151,26 +182,59 @@ import ParticleSpheres from '../components/ParticleSpheres.astro';
     z-index: 4;
   }
   #final.dentro { opacity: 1; pointer-events: auto; }
-  #final a {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 2;
-    white-space: nowrap;
-    color: #000;
-    text-decoration: none;
-    font-size: 13px;
-    letter-spacing: 0.35em;
-    animation: respira 4s ease-in-out infinite;
+  #final {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
+  #countdown {
+    color: #0a0a0a;
+    font-weight: 200;
+    font-size: min(4.5vw, 65px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  #countdown :global(.g) { margin-left: 0.22em; }
+  .pie {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .unidad {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.45em;
+    margin-right: -0.45em;
+    color: #555555;
+  }
+  .pie a {
+    margin-top: 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.5em;
+    margin-right: -0.5em;
+    text-decoration: none;
+  }
+  @media (max-width: 599px) {
+    #countdown { font-size: min(11vw, 48px); }
+  }
+  .cdlc-shine{background:linear-gradient(100deg,#111 0%,#111 42%,#c8c8c8 50%,#111 58%,#111 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cdlcShine 3.5s ease-in-out infinite}
+  .cdlc-shine:hover{animation-duration:1.2s}
+  @keyframes cdlcShine{0%{background-position:100% 0}60%,100%{background-position:0% 0}}
+  @media (prefers-reduced-motion: reduce){.cdlc-shine{animation:none;background:none;color:#111}}
 
   @keyframes brillo {
     0%, 100% { opacity: 0.2; text-shadow: none; }
     50% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.3); }
-  }
-  @keyframes respira {
-    0%, 100% { opacity: 0.35; }
-    50% { opacity: 1; }
   }
 </style>
