@@ -17,9 +17,11 @@
     <button id="sonido">sonido on</button>
     <div id="flash"></div>
     <section id="final" lang="en">
-      <div id="countdown" role="timer" aria-label="seconds left"></div>
-      <div class="pie">
+      <div class="numero">
+        <div id="countdown" role="timer" aria-label="seconds left"></div>
         <span class="unidad">seconds</span>
+      </div>
+      <div class="pie">
         <a class="cdlc-shine" href="https://www.instagram.com/capilladelacruz/" target="_blank" rel="noopener">CAPILLADELACRUZ</a>
       </div>
     </section>
@@ -207,15 +209,21 @@
     flex-direction: column;
     align-items: center;
   }
+  .numero { position: relative; }
   .unidad {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 20px;
+    white-space: nowrap;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.45em;
-    margin-right: -0.45em;
+    padding-left: 0.45em;
     color: #555555;
   }
   .pie a {
-    margin-top: 14px;
     min-height: 44px;
     display: inline-flex;
     align-items: center;
@@ -227,6 +235,7 @@
   }
   @media (max-width: 599px) {
     #countdown { font-size: min(11vw, 48px); }
+    .unidad { margin-top: 14px; }
   }
   .cdlc-shine{background:linear-gradient(100deg,#111 0%,#111 42%,#c8c8c8 50%,#111 58%,#111 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cdlcShine 3.5s ease-in-out infinite}
   .cdlc-shine:hover{animation-duration:1.2s}
